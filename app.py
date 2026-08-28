@@ -664,52 +664,46 @@ st.markdown("""
     --qx-navy: #0A0F2C;
     --qx-blue: #2563EB;
     --qx-purple: #7C3AED;
-    --qx-light: #E8EFF0;
+    --qx-bg: #F7F9FC;
+    --qx-card: #FFFFFF;
+    --qx-line: #D9E2EC;
     --qx-ink: #111827;
     --qx-muted: #667085;
+    --qx-soft: #EFF4FA;
 }
 
-/* App background */
+/* Global app */
+html, body, [class*="css"] {
+    color: var(--qx-ink);
+}
 [data-testid="stAppViewContainer"] {
     background:
-        radial-gradient(circle at 90% 0%, rgba(124,58,237,0.08), transparent 28%),
-        radial-gradient(circle at 12% 5%, rgba(37,99,235,0.08), transparent 25%),
-        #F7F9FC;
+        radial-gradient(circle at 92% 0%, rgba(124,58,237,0.10), transparent 28%),
+        radial-gradient(circle at 8% 4%, rgba(37,99,235,0.10), transparent 24%),
+        var(--qx-bg);
+    color: var(--qx-ink);
 }
 [data-testid="stHeader"] {
-    background: rgba(247,249,252,0.88);
+    background: rgba(247,249,252,0.92);
+}
+main * {
+    color: inherit;
 }
 
-/* Sidebar */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0A0F2C 0%, #111A3A 100%);
-    border-right: 1px solid rgba(255,255,255,0.08);
-}
-[data-testid="stSidebar"] * {
-    color: #F8FAFC;
-}
-[data-testid="stSidebar"] [data-testid="stMetricValue"] {
-    color: #FFFFFF;
-}
-[data-testid="stSidebar"] input {
-    color: #111827 !important;
-    background: #FFFFFF !important;
-}
-
-/* Main content width */
+/* Page width / mobile-first */
 .block-container {
     max-width: 470px !important;
-    padding-top: 1.1rem;
+    padding-top: 1rem;
     padding-left: 16px !important;
     padding-right: 16px !important;
     padding-bottom: 3rem;
     margin: 0 auto;
 }
 
-/* Force a true mobile / single-column experience even on desktop */
+/* Force one-column layout */
 [data-testid="stHorizontalBlock"] {
     flex-wrap: wrap !important;
-    gap: 0.65rem !important;
+    gap: 0.75rem !important;
 }
 [data-testid="column"] {
     flex: 1 1 100% !important;
@@ -717,40 +711,37 @@ st.markdown("""
     min-width: 100% !important;
 }
 
-/* Hide desktop sidebar by default; configuration remains available via the menu if needed */
+/* Sidebar */
 [data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0A0F2C 0%, #121A3D 100%);
+    border-right: 1px solid rgba(255,255,255,0.08);
     min-width: 290px;
 }
-
-/* Mobile-like navigation */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
-    overflow-x: auto;
-    scrollbar-width: none;
+[data-testid="stSidebar"] * {
+    color: #F8FAFC !important;
 }
-.stTabs [data-baseweb="tab"] {
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: 13px;
-    white-space: nowrap;
+[data-testid="stSidebar"] input {
+    color: #111827 !important;
+    background: #FFFFFF !important;
+    -webkit-text-fill-color: #111827 !important;
 }
 
-/* Brand hero */
+/* Brand */
 .qx-brand {
     display:flex;
     align-items:center;
-    gap:16px;
-    margin-bottom:4px;
+    gap:14px;
+    margin-bottom:6px;
 }
 .qx-mark {
     width:48px;
     height:48px;
-    border-radius:18px;
+    border-radius:16px;
     background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
     display:flex;
     align-items:center;
     justify-content:center;
-    color:#FFFFFF;
+    color:#FFFFFF !important;
     font-size:31px;
     font-weight:900;
     line-height:1;
@@ -760,92 +751,172 @@ st.markdown("""
     font-size:38px;
     line-height:1;
     font-weight:850;
-    letter-spacing:-1.8px;
-    color:#0A0F2C;
+    letter-spacing:-1.5px;
+    color:var(--qx-navy) !important;
 }
 .qx-tagline {
-    color:#667085;
-    margin: 10px 0 20px 0;
+    color:var(--qx-muted) !important;
+    margin: 10px 0 18px 0;
     font-size:15px;
+    line-height:1.4;
 }
 
-/* Headings */
+/* Headings / text */
+h1, h2, h3, h4, .stMarkdown p, .stMarkdown li, .stText, p, li, label, span, div {
+    color: var(--qx-ink);
+}
 h1, h2, h3 {
-    color:#0A0F2C !important;
-    letter-spacing:-0.4px;
+    color: var(--qx-navy) !important;
+    letter-spacing: -0.4px;
+}
+[data-testid="stCaptionContainer"] p,
+small {
+    color: var(--qx-muted) !important;
 }
 
 /* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-bottom: 8px;
+}
 button[data-baseweb="tab"] {
-    font-weight:700;
-    color:#667085;
+    font-weight: 700;
+    color: var(--qx-muted) !important;
+    background: transparent !important;
+    border-radius: 10px 10px 0 0;
+    white-space: nowrap;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 13px;
 }
 button[data-baseweb="tab"][aria-selected="true"] {
-    color:#2563EB !important;
+    color: var(--qx-blue) !important;
 }
 div[data-baseweb="tab-highlight"] {
     background: linear-gradient(90deg,#2563EB,#7C3AED) !important;
+    height: 3px !important;
+    border-radius: 99px !important;
 }
 
-/* Inputs and upload */
-div[data-baseweb="input"] > div,
-div[data-baseweb="textarea"] > div,
-[data-testid="stFileUploaderDropzone"] {
-    border-radius:14px !important;
-    border-color:#D7DFEA !important;
-    background:#FFFFFF !important;
-}
-textarea, input {
-    border-radius:12px !important;
-}
-
-/* Primary button */
-.stButton > button[kind="primary"],
-.stDownloadButton > button {
-    border:0 !important;
-    border-radius:12px !important;
-    background: linear-gradient(90deg,#2563EB 0%,#7C3AED 100%) !important;
-    color:#FFFFFF !important;
-    font-weight:750 !important;
-    min-height:46px;
-}
-.stButton > button:not([kind="primary"]) {
-    border-radius:12px !important;
-    border:1px solid #D7DFEA !important;
-    background:#FFFFFF !important;
-    color:#0A0F2C !important;
-    font-weight:650 !important;
-    min-height:46px;
-}
-
-/* Cards, expanders, dataframes */
+/* Cards / containers */
+[data-testid="stMetric"],
 [data-testid="stExpander"],
 [data-testid="stDataFrame"],
-[data-testid="stMetric"] {
-    background:#FFFFFF;
-    border:1px solid #E3E8F0;
-    border-radius:16px;
+div[data-testid="stFileUploader"] section,
+div[data-testid="stAudioInput"] {
+    background: var(--qx-card) !important;
+    border: 1px solid var(--qx-line) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 24px rgba(10,15,44,0.04);
 }
+
+/* Metric readability */
 [data-testid="stMetric"] {
-    padding:14px 16px;
+    padding: 14px 16px !important;
+}
+[data-testid="stMetricLabel"] p {
+    color: var(--qx-muted) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+}
+[data-testid="stMetricValue"] {
+    color: var(--qx-navy) !important;
+    font-weight: 800 !important;
+}
+
+/* Widget labels */
+[data-testid="stWidgetLabel"] p,
+label[data-testid="stWidgetLabel"],
+[data-testid="stMarkdownContainer"] > p {
+    color: var(--qx-navy) !important;
+    font-weight: 650 !important;
+}
+
+/* Inputs */
+[data-baseweb="base-input"],
+[data-baseweb="input"] > div,
+[data-baseweb="textarea"] > div,
+textarea,
+input,
+select {
+    background: #FFFFFF !important;
+    color: var(--qx-navy) !important;
+    border-color: var(--qx-line) !important;
+    border-radius: 14px !important;
+    -webkit-text-fill-color: var(--qx-navy) !important;
+    opacity: 1 !important;
+}
+input::placeholder,
+textarea::placeholder {
+    color: #94A3B8 !important;
+    -webkit-text-fill-color: #94A3B8 !important;
+}
+.stTextInput input,
+.stNumberInput input,
+.stTextArea textarea {
+    color: var(--qx-navy) !important;
+    background: #FFFFFF !important;
+    -webkit-text-fill-color: var(--qx-navy) !important;
+    caret-color: var(--qx-blue) !important;
+}
+
+/* Audio input widget */
+div[data-testid="stAudioInput"] {
+    padding: 10px 12px !important;
+}
+audio {
+    width: 100%;
+    border-radius: 12px;
+}
+
+/* Buttons */
+.stButton > button[kind="primary"],
+.stDownloadButton > button {
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(90deg,#2563EB 0%,#7C3AED 100%) !important;
+    color: #FFFFFF !important;
+    font-weight: 750 !important;
+    min-height: 48px;
+    box-shadow: 0 10px 24px rgba(37,99,235,0.18);
+}
+.stButton > button:not([kind="primary"]) {
+    border-radius: 14px !important;
+    border: 1px solid var(--qx-line) !important;
+    background: #FFFFFF !important;
+    color: var(--qx-navy) !important;
+    font-weight: 650 !important;
+    min-height: 48px;
+}
+.stButton > button p,
+.stDownloadButton > button p,
+.stButton > button span,
+.stDownloadButton > button span {
+    color: inherit !important;
+}
+
+/* Checkboxes */
+.stCheckbox label, .stCheckbox p {
+    color: var(--qx-ink) !important;
 }
 
 /* Alerts */
 [data-testid="stAlert"] {
-    border-radius:14px;
+    border-radius: 14px !important;
 }
 
 /* Divider */
 hr {
-    border-color:#E5EAF1 !important;
+    border-color: #E5EAF1 !important;
 }
 
 /* Mobile */
 @media (max-width: 700px) {
-    .qx-name { font-size:36px; }
-    .qx-mark { width:48px; height:48px; border-radius:15px; }
-    .qx-tagline { margin-left:0; }
-    .block-container { padding-top:1.2rem; }
+    .qx-name { font-size: 34px; }
+    .qx-mark { width: 46px; height: 46px; border-radius: 15px; }
+    .block-container { padding-top: 0.85rem; }
 }
 </style>
 
@@ -853,7 +924,7 @@ hr {
     <div class="qx-mark">Q</div>
     <div class="qx-name">Quotexia</div>
 </div>
-<div class="qx-tagline">De la voix au devis, avec validation humaine</div>
+<div class="qx-tagline">Application mobile de devis assisté par IA</div>
 """, unsafe_allow_html=True)
 
 with st.sidebar:

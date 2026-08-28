@@ -165,3 +165,11 @@ client, contact, site, adresse, lignes produits, quantités, prix, livraison, in
 - Saisie texte conservée comme solution de secours.
 - Devis final téléchargé en PDF.
 - Calcul HT, TVA et TTC conservé.
+
+
+## V6.1 — correction visuelle mobile
+
+- Correction du contraste sur iPhone / mobile.
+- Thème clair forcé via `.streamlit/config.toml`.
+- Recoloration explicite des labels, champs, cartes, onglets et métriques.
+- Aucun changement fonctionnel métier.
