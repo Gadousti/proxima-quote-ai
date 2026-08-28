@@ -6,3 +6,4 @@ remise_max_commercial_pct,10
 livraison_standard_ht,150
 installation_unitaire_ht,35
 validite_devis_jours,30
+tva_pct,20

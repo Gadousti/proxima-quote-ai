@@ -19,7 +19,7 @@ APP_DIR = Path(__file__).parent
 CATALOG_PATH = APP_DIR / "catalogue.csv"
 RULES_PATH = APP_DIR / "regles_tarifaires.csv"
 
-st.set_page_config(page_title="Proxima Quote AI", page_icon="🧾", layout="wide")
+st.set_page_config(page_title="Quotexia", page_icon="⚡", layout="wide")
 
 # ---------------------------
 # Models
@@ -378,37 +378,63 @@ def missing_questions(need_obj, variants):
 def money(x):
     return f"{x:,.2f} €".replace(",", " ").replace(".", ",")
 
+def tax_totals(total_ht):
+    tva_pct = float(rules.get("tva_pct", 20))
+    tva_amount = float(total_ht) * tva_pct / 100
+    total_ttc = float(total_ht) + tva_amount
+    return tva_pct, tva_amount, total_ttc
+
 def quote_html(need_obj, variant):
     today = date.today()
     validity = int(rules["validite_devis_jours"])
+    tva_pct, tva_amount, total_ttc = tax_totals(variant["total_ht"])
+
     lines_html = ""
     for l in variant["lignes"]:
         lines_html += f"""
         <tr>
-          <td>{l['reference']}</td><td>{l['designation']}</td><td>{l['quantite']}</td>
-          <td>{money(l['prix_unitaire_net'])}</td><td>{money(l['total_ht'])}</td>
+          <td>{l['reference']}</td>
+          <td>{l['designation']}</td>
+          <td>{l['quantite']}</td>
+          <td>{money(l['prix_unitaire_net'])}</td>
+          <td>{money(l['total_ht'])}</td>
         </tr>"""
+
     return f"""<!doctype html>
 <html lang="fr"><meta charset="utf-8">
 <title>Brouillon de devis commercial</title>
 <style>
-body{{font-family:Arial,sans-serif;max-width:960px;margin:40px auto;color:#222}}
-h1{{margin-bottom:4px}} .muted{{color:#666}} .warning{{background:#fff3cd;padding:12px;border-radius:8px}}
-table{{width:100%;border-collapse:collapse;margin:20px 0}} th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
-th{{background:#f5f5f5}} .total{{font-size:1.25rem;font-weight:bold;text-align:right}}
+body{{font-family:Inter,Arial,sans-serif;max-width:960px;margin:40px auto;color:#111827}}
+h1{{margin-bottom:4px;color:#0A0F2C}}
+.muted{{color:#667085}}
+.warning{{background:#FFF7D6;padding:12px;border-radius:10px}}
+table{{width:100%;border-collapse:collapse;margin:20px 0}}
+th,td{{border:1px solid #E3E8F0;padding:9px;text-align:left}}
+th{{background:#F2F5FA;color:#0A0F2C}}
+.totals{{margin-left:auto;width:340px;margin-top:24px}}
+.totals div{{display:flex;justify-content:space-between;padding:7px 0}}
+.ttc{{font-size:1.25rem;font-weight:bold;border-top:2px solid #0A0F2C;margin-top:4px;padding-top:10px!important}}
 </style>
-<h1>{(meta.get('client_nom') or 'CLIENT').upper()}</h1>
+<h1>{(need_obj.client.nom or 'CLIENT').upper()}</h1>
 <div class="muted">BROUILLON DE DEVIS — VALIDATION HUMAINE REQUISE</div>
-<p><b>Client :</b> {need_obj.client.nom or "À confirmer"}<br>
+<p>
+<b>Client :</b> {need_obj.client.nom or "À confirmer"}<br>
 <b>Site :</b> {need_obj.client.adresse or need_obj.client.site or "À confirmer"}<br>
 <b>Contact :</b> {need_obj.client.contact or "À confirmer"}<br>
 <b>Date cible :</b> {need_obj.date_cible or "À confirmer"}<br>
-<b>Variante :</b> {variant['gamme'].capitalize()}</p>
-<table><thead><tr><th>Référence</th><th>Désignation</th><th>Qté</th><th>PU net HT</th><th>Total HT</th></tr></thead>
-<tbody>{lines_html}</tbody></table>
+<b>Variante :</b> {variant['gamme'].capitalize()}
+</p>
+<table>
+<thead><tr><th>Référence</th><th>Désignation</th><th>Qté</th><th>PU net HT</th><th>Total HT</th></tr></thead>
+<tbody>{lines_html}</tbody>
+</table>
 <p>Livraison : {money(variant['livraison_ht'])}<br>
 Installation : {money(variant['installation_ht'])}</p>
-<div class="total">TOTAL HT : {money(variant['total_ht'])}</div>
+<div class="totals">
+  <div><span>Total HT</span><b>{money(variant['total_ht'])}</b></div>
+  <div><span>TVA ({tva_pct:.0f} %)</span><b>{money(tva_amount)}</b></div>
+  <div class="ttc"><span>Total TTC</span><b>{money(total_ttc)}</b></div>
+</div>
 <p>Validité de l'offre : {validity} jours (jusqu'au {(today+timedelta(days=validity)).strftime("%d/%m/%Y")}).</p>
 <div class="warning"><b>Important :</b> ceci est un brouillon. Aucune référence, disponibilité ou remise hors cadre
 ne doit être envoyée au client sans validation humaine.</div>
@@ -488,6 +514,7 @@ def final_quote_html(meta, variant, human_notes="", modifications=None):
     """
     today = date.today()
     validity = int(rules["validite_devis_jours"])
+    tva_pct, tva_amount, total_ttc = tax_totals(variant["total_ht"])
 
     lines_html = ""
     for l in variant["lignes"]:
@@ -500,32 +527,24 @@ def final_quote_html(meta, variant, human_notes="", modifications=None):
           <td>{money(l['total_ht'])}</td>
         </tr>"""
 
-    # Ne garder que les notes réellement complétées par le commercial.
     cleaned_notes = []
     for raw in (human_notes or "").splitlines():
         line = raw.strip()
         if not line:
             continue
-
         visible = line[1:].strip() if line.startswith("-") else line
-
-        # Question restée vide, ex. "Adresse exacte :"
         if visible.endswith(":"):
             continue
-
-        # Format "Question : réponse"
         if ":" in visible:
             _, answer = visible.split(":", 1)
             if not answer.strip():
                 continue
-
         cleaned_notes.append(visible)
 
     notes_html = ""
     if cleaned_notes:
         notes_html = "<ul>" + "".join(f"<li>{n}</li>" for n in cleaned_notes) + "</ul>"
 
-    # Ne jamais exposer la marge ou la mécanique interne.
     client_warnings = []
     for w in variant.get("warnings", []):
         wl = w.lower()
@@ -549,29 +568,47 @@ def final_quote_html(meta, variant, human_notes="", modifications=None):
 <meta charset="utf-8">
 <title>Devis commercial</title>
 <style>
-body{{font-family:Arial,sans-serif;max-width:960px;margin:40px auto;color:#222}}
-h1{{margin-bottom:4px}}
-.muted{{color:#666}}
-.warning{{background:#fff3cd;padding:12px;border-radius:8px}}
-table{{width:100%;border-collapse:collapse;margin:20px 0}}
-th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
-th{{background:#f5f5f5}}
-.total{{font-size:1.25rem;font-weight:bold;text-align:right}}
-.section{{margin-top:28px}}
+:root{{
+  --navy:#0A0F2C;
+  --blue:#2563EB;
+  --purple:#7C3AED;
+  --line:#E3E8F0;
+  --muted:#667085;
+}}
+body{{font-family:Inter,Arial,sans-serif;max-width:960px;margin:40px auto;color:#111827}}
+.header{{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--navy);padding-bottom:16px}}
+.client-title{{font-size:32px;font-weight:850;color:var(--navy);letter-spacing:-0.6px}}
+.doc-label{{font-size:13px;font-weight:800;letter-spacing:1.7px;color:var(--blue)}}
+.meta{{background:#F7F9FC;border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:22px;line-height:1.7}}
+table{{width:100%;border-collapse:collapse;margin:24px 0}}
+th,td{{border-bottom:1px solid var(--line);padding:11px 9px;text-align:left}}
+th{{background:#0A0F2C;color:white;font-size:13px}}
+th:first-child{{border-radius:8px 0 0 8px}}
+th:last-child{{border-radius:0 8px 8px 0}}
+.service{{color:var(--muted);line-height:1.7}}
+.totals{{margin-left:auto;width:360px;margin-top:24px}}
+.totals div{{display:flex;justify-content:space-between;padding:8px 0}}
+.totals .ht{{color:#344054}}
+.totals .tax{{color:#475467}}
+.totals .ttc{{font-size:1.3rem;font-weight:850;color:var(--navy);border-top:2px solid var(--navy);margin-top:5px;padding-top:12px}}
+.section{{margin-top:30px}}
+.section h3{{color:var(--navy);font-size:17px}}
+.warning{{background:#FFF7D6;border-left:4px solid #F59E0B;padding:13px 16px;border-radius:10px}}
+.footer{{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}}
 </style>
 
-<h1>{(meta.get('client_nom') or 'CLIENT').upper()}</h1>
-<div class="muted">DEVIS COMMERCIAL</div>
+<div class="header">
+  <div class="client-title">{(meta.get('client_nom') or 'CLIENT').upper()}</div>
+  <div class="doc-label">DEVIS COMMERCIAL</div>
+</div>
 
-<div class="section">
-<p>
+<div class="meta">
 <b>Client :</b> {meta.get('client_nom') or "À confirmer"}<br>
 <b>Contact :</b> {meta.get('contact') or "À confirmer"}<br>
 <b>Site :</b> {meta.get('site') or "À confirmer"}<br>
 <b>Adresse :</b> {meta.get('adresse') or "À confirmer"}<br>
 <b>Date cible :</b> {meta.get('date_cible') or "À confirmer"}<br>
 <b>Variante :</b> {variant['gamme'].capitalize()}
-</p>
 </div>
 
 <table>
@@ -587,23 +624,24 @@ th{{background:#f5f5f5}}
 <tbody>{lines_html}</tbody>
 </table>
 
-<div class="section">
-<p>
+<div class="service">
 <b>Livraison :</b> {livraison_txt} — {money(variant['livraison_ht'])}<br>
 <b>Installation :</b> {installation_txt} — {money(variant['installation_ht'])}
-</p>
 </div>
 
-<div class="total">TOTAL HT : {money(variant['total_ht'])}</div>
+<div class="totals">
+  <div class="ht"><span>Total HT</span><b>{money(variant['total_ht'])}</b></div>
+  <div class="tax"><span>TVA ({tva_pct:.0f} %)</span><b>{money(tva_amount)}</b></div>
+  <div class="ttc"><span>Total TTC</span><b>{money(total_ttc)}</b></div>
+</div>
 
 {"<div class='section'><h3>Informations complémentaires</h3>" + notes_html + "</div>" if notes_html else ""}
 
 {"<div class='warning section'><b>Points à confirmer :</b>" + warnings_html + "</div>" if warnings_html else ""}
 
-<div class="section">
-<p>Validité de l'offre : {validity} jours (jusqu'au {(today+timedelta(days=validity)).strftime("%d/%m/%Y")}).</p>
+<div class="footer">
+Validité de l'offre : {validity} jours (jusqu'au {(today+timedelta(days=validity)).strftime("%d/%m/%Y")}).
 </div>
-
 </html>"""
 
 def compare_values(field, old, new, modifications):
@@ -619,8 +657,171 @@ def compare_values(field, old, new, modifications):
 # ---------------------------
 # UI
 # ---------------------------
-st.title("🧾 Proxima Quote AI")
-st.caption("Prototype scolaire — note commerciale → besoin structuré → catalogue vérifié → brouillon de devis")
+st.markdown("""
+<style>
+:root {
+    --qx-navy: #0A0F2C;
+    --qx-blue: #2563EB;
+    --qx-purple: #7C3AED;
+    --qx-light: #E8EFF0;
+    --qx-ink: #111827;
+    --qx-muted: #667085;
+}
+
+/* App background */
+[data-testid="stAppViewContainer"] {
+    background:
+        radial-gradient(circle at 90% 0%, rgba(124,58,237,0.08), transparent 28%),
+        radial-gradient(circle at 12% 5%, rgba(37,99,235,0.08), transparent 25%),
+        #F7F9FC;
+}
+[data-testid="stHeader"] {
+    background: rgba(247,249,252,0.88);
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0A0F2C 0%, #111A3A 100%);
+    border-right: 1px solid rgba(255,255,255,0.08);
+}
+[data-testid="stSidebar"] * {
+    color: #F8FAFC;
+}
+[data-testid="stSidebar"] [data-testid="stMetricValue"] {
+    color: #FFFFFF;
+}
+[data-testid="stSidebar"] input {
+    color: #111827 !important;
+    background: #FFFFFF !important;
+}
+
+/* Main content width */
+.block-container {
+    max-width: 1180px;
+    padding-top: 2.1rem;
+    padding-bottom: 3rem;
+}
+
+/* Brand hero */
+.qx-brand {
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:4px;
+}
+.qx-mark {
+    width:54px;
+    height:54px;
+    border-radius:18px;
+    background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#FFFFFF;
+    font-size:31px;
+    font-weight:900;
+    line-height:1;
+    box-shadow: 0 12px 32px rgba(37,99,235,0.22);
+}
+.qx-name {
+    font-size:46px;
+    line-height:1;
+    font-weight:850;
+    letter-spacing:-1.8px;
+    color:#0A0F2C;
+}
+.qx-tagline {
+    color:#667085;
+    margin: 10px 0 22px 70px;
+    font-size:15px;
+}
+
+/* Headings */
+h1, h2, h3 {
+    color:#0A0F2C !important;
+    letter-spacing:-0.4px;
+}
+
+/* Tabs */
+button[data-baseweb="tab"] {
+    font-weight:700;
+    color:#667085;
+}
+button[data-baseweb="tab"][aria-selected="true"] {
+    color:#2563EB !important;
+}
+div[data-baseweb="tab-highlight"] {
+    background: linear-gradient(90deg,#2563EB,#7C3AED) !important;
+}
+
+/* Inputs and upload */
+div[data-baseweb="input"] > div,
+div[data-baseweb="textarea"] > div,
+[data-testid="stFileUploaderDropzone"] {
+    border-radius:14px !important;
+    border-color:#D7DFEA !important;
+    background:#FFFFFF !important;
+}
+textarea, input {
+    border-radius:12px !important;
+}
+
+/* Primary button */
+.stButton > button[kind="primary"],
+.stDownloadButton > button {
+    border:0 !important;
+    border-radius:12px !important;
+    background: linear-gradient(90deg,#2563EB 0%,#7C3AED 100%) !important;
+    color:#FFFFFF !important;
+    font-weight:750 !important;
+    min-height:46px;
+}
+.stButton > button:not([kind="primary"]) {
+    border-radius:12px !important;
+    border:1px solid #D7DFEA !important;
+    background:#FFFFFF !important;
+    color:#0A0F2C !important;
+    font-weight:650 !important;
+    min-height:46px;
+}
+
+/* Cards, expanders, dataframes */
+[data-testid="stExpander"],
+[data-testid="stDataFrame"],
+[data-testid="stMetric"] {
+    background:#FFFFFF;
+    border:1px solid #E3E8F0;
+    border-radius:16px;
+}
+[data-testid="stMetric"] {
+    padding:14px 16px;
+}
+
+/* Alerts */
+[data-testid="stAlert"] {
+    border-radius:14px;
+}
+
+/* Divider */
+hr {
+    border-color:#E5EAF1 !important;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+    .qx-name { font-size:36px; }
+    .qx-mark { width:48px; height:48px; border-radius:15px; }
+    .qx-tagline { margin-left:0; }
+    .block-container { padding-top:1.2rem; }
+}
+</style>
+
+<div class="qx-brand">
+    <div class="qx-mark">Q</div>
+    <div class="qx-name">Quotexia</div>
+</div>
+<div class="qx-tagline">Prototype scolaire — note commerciale → besoin structuré → catalogue vérifié → brouillon de devis</div>
+""", unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("Configuration")
@@ -985,10 +1186,15 @@ with tab3:
                 } for l in edited_variant["lignes"]])
                 st.dataframe(preview_df, use_container_width=True, hide_index=True)
 
+                tva_pct, tva_amount, total_ttc = tax_totals(edited_variant["total_ht"])
                 m1, m2, m3 = st.columns(3)
-                m1.metric("Total final HT", money(edited_variant["total_ht"]))
-                m2.metric("Livraison", money(edited_variant["livraison_ht"]))
-                m3.metric("Installation", money(edited_variant["installation_ht"]))
+                m1.metric("Total HT", money(edited_variant["total_ht"]))
+                m2.metric(f"TVA ({tva_pct:.0f} %)", money(tva_amount))
+                m3.metric("Total TTC", money(total_ttc))
+
+                s1, s2 = st.columns(2)
+                s1.metric("Livraison", money(edited_variant["livraison_ht"]))
+                s2.metric("Installation", money(edited_variant["installation_ht"]))
 
                 # Remaining critical fields
                 still_missing = []
@@ -1036,7 +1242,7 @@ with tab3:
                 st.download_button(
                     "⬇️ Télécharger le devis final validé (HTML)",
                     data=html,
-                    file_name=f"devis_proxima_client_{gamme}.html",
+                    file_name=f"devis_quotexia_{gamme}.html",
                     mime="text/html",
                     disabled=not final_ok,
                     key=f"final_download_{gamme}",
@@ -1074,7 +1280,7 @@ with tab3:
         st.download_button(
             "📋 Télécharger la trace complète IA + catalogue + corrections humaines (JSON)",
             data=json.dumps(trace, ensure_ascii=False, indent=2),
-            file_name="trace_proxima_quote_ai_complete.json",
+            file_name="trace_quotexia_complete.json",
             mime="application/json",
             use_container_width=True
         )

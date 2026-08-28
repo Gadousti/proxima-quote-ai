@@ -1,4 +1,4 @@
-# Proxima Quote AI — MVP prêt à lancer
+# Quotexia — MVP prêt à lancer
 
 
 ## Démarrage sur macOS
@@ -142,3 +142,16 @@ Ces informations restent disponibles dans l'application et dans le fichier JSON 
 
 Le devis client ne conserve que les informations commerciales utiles :
 client, contact, site, adresse, lignes produits, quantités, prix, livraison, installation, informations complémentaires réellement renseignées, total et validité de l'offre.
+
+
+## V5 — identité Quotexia, TVA et refonte visuelle
+
+- L'application s'appelle désormais **Quotexia**.
+- La charte visuelle reprend les codes fournis : bleu nuit, bleu électrique, violet et gris clair.
+- Le contenu et le workflow métier restent identiques.
+- Le devis affiche désormais :
+  - Total HT ;
+  - TVA ;
+  - Total TTC.
+- Le taux de TVA est paramétré dans `regles_tarifaires.csv` via `tva_pct` (20 % dans le MVP).
+- Le devis client a également été modernisé visuellement.
