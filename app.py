@@ -390,14 +390,14 @@ def quote_html(need_obj, variant):
         </tr>"""
     return f"""<!doctype html>
 <html lang="fr"><meta charset="utf-8">
-<title>Brouillon de devis Proxima</title>
+<title>Brouillon de devis commercial</title>
 <style>
 body{{font-family:Arial,sans-serif;max-width:960px;margin:40px auto;color:#222}}
 h1{{margin-bottom:4px}} .muted{{color:#666}} .warning{{background:#fff3cd;padding:12px;border-radius:8px}}
 table{{width:100%;border-collapse:collapse;margin:20px 0}} th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
 th{{background:#f5f5f5}} .total{{font-size:1.25rem;font-weight:bold;text-align:right}}
 </style>
-<h1>PROXIMA ÉQUIPEMENTS</h1>
+<h1>{(meta.get('client_nom') or 'CLIENT').upper()}</h1>
 <div class="muted">BROUILLON DE DEVIS — VALIDATION HUMAINE REQUISE</div>
 <p><b>Client :</b> {need_obj.client.nom or "À confirmer"}<br>
 <b>Site :</b> {need_obj.client.adresse or need_obj.client.site or "À confirmer"}<br>
@@ -547,7 +547,7 @@ def final_quote_html(meta, variant, human_notes="", modifications=None):
     return f"""<!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
-<title>Devis Proxima Équipements</title>
+<title>Devis commercial</title>
 <style>
 body{{font-family:Arial,sans-serif;max-width:960px;margin:40px auto;color:#222}}
 h1{{margin-bottom:4px}}
@@ -560,7 +560,7 @@ th{{background:#f5f5f5}}
 .section{{margin-top:28px}}
 </style>
 
-<h1>PROXIMA ÉQUIPEMENTS</h1>
+<h1>{(meta.get('client_nom') or 'CLIENT').upper()}</h1>
 <div class="muted">DEVIS COMMERCIAL</div>
 
 <div class="section">
