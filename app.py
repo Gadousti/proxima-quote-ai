@@ -86,8 +86,14 @@ def normalize_catalogue_df(df):
     if df is None or df.empty:
         raise ValueError("Le catalogue est vide.")
 
+    def normalize_column_name(value):
+        s = str(value).lower().strip()
+        s = unicodedata.normalize("NFD", s)
+        s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
+        return s.replace(" ", "_")
+
     df = df.copy()
-    df.columns = [normalize(c).replace(" ", "_") for c in df.columns]
+    df.columns = [normalize_column_name(c) for c in df.columns]
 
     missing = [c for c in REQUIRED_CATALOG_COLUMNS if c not in df.columns]
     if missing:

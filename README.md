@@ -211,3 +211,10 @@ dans la partie Client.
 
 L’activation d’un catalogue personnalisé exige maintenant que le nom
 de l’entreprise vendeuse soit renseigné.
+
+
+## V7.1.1 — correctif démarrage
+
+Correction d'un `NameError` au chargement du catalogue par défaut :
+la normalisation des noms de colonnes est désormais autonome et ne dépend plus
+d'une fonction définie plus bas dans le fichier.
