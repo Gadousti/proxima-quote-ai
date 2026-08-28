@@ -113,3 +113,18 @@ L'IA n'invente ni référence ni prix :
 
 Le système ne se connecte pas au véritable ERP/stock de Proxima. En production, `catalogue.csv`
 serait remplacé par une base de données ou une API d'entreprise.
+
+## V3 — édition humaine du devis
+
+L'onglet **Devis** permet maintenant au commercial de :
+- compléter client, contact, adresse et date cible ;
+- modifier la quantité finale ;
+- choisir une autre référence parmi la shortlist catalogue ;
+- ajuster une remise dans la limite commerciale autorisée ;
+- confirmer livraison et installation ;
+- saisir les réponses obtenues auprès du client ;
+- enregistrer les corrections et recalculer le devis ;
+- consulter la traçabilité des modifications ;
+- valider humainement avant téléchargement du devis final.
+
+Les références et les prix restent issus du catalogue : l'édition humaine ne permet pas d'inventer une référence ou un prix.

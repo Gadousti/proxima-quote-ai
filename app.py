@@ -414,6 +414,159 @@ Installation : {money(variant['installation_ht'])}</p>
 ne doit être envoyée au client sans validation humaine.</div>
 </html>"""
 
+
+def recalc_edited_variant(original_variant, edited_lines, delivery_enabled, installation_enabled):
+    """Recalcule le devis à partir des corrections humaines, sans laisser l'IA fabriquer prix/références."""
+    result_lines = []
+    warnings = []
+
+    for edited in edited_lines:
+        ref = edited["reference"]
+        qty = int(edited["quantite"])
+        discount_pct = float(edited["remise_pct"])
+
+        matches = catalog[catalog["reference"] == ref]
+        if matches.empty:
+            warnings.append(f"Référence {ref} introuvable dans le catalogue : ligne bloquée.")
+            continue
+
+        product = matches.iloc[0]
+        unit_price = float(product["prix_vente_ht"])
+        cost = float(product["prix_achat_ht"])
+        stock = int(product["stock"])
+        discount_pct = min(max(discount_pct, 0.0), rules["remise_max_commercial_pct"])
+        net_unit = unit_price * (1 - discount_pct / 100)
+        total = net_unit * qty
+        margin_pct = ((net_unit - cost) / net_unit * 100) if net_unit else 0.0
+
+        if stock < qty:
+            warnings.append(
+                f"{ref} : stock catalogue {stock}, quantité finale {qty}. "
+                "Disponibilité à confirmer avant envoi."
+            )
+        if margin_pct < rules["marge_minimale_pct"]:
+            warnings.append(
+                f"{ref} : marge finale {margin_pct:.1f}% sous le minimum "
+                f"{rules['marge_minimale_pct']:.0f}%. Validation managériale requise."
+            )
+
+        result_lines.append({
+            "reference": ref,
+            "designation": str(product["nom"]),
+            "categorie": str(product["categorie"]),
+            "quantite": qty,
+            "prix_catalogue": unit_price,
+            "remise_pct": discount_pct,
+            "prix_unitaire_net": net_unit,
+            "total_ht": total,
+            "stock_catalogue": stock,
+            "marge_pct": margin_pct,
+            "source_reference": "catalogue.csv",
+            "source_prix": "catalogue.csv",
+            "source_quantite": "correction humaine",
+            "source_remise": "correction humaine / règles tarifaires",
+        })
+
+    delivery = rules["livraison_standard_ht"] if delivery_enabled else 0.0
+    install_qty = sum(l["quantite"] for l in result_lines)
+    installation = rules["installation_unitaire_ht"] * install_qty if installation_enabled else 0.0
+
+    return {
+        "gamme": original_variant["gamme"],
+        "lignes": result_lines,
+        "livraison_ht": delivery,
+        "installation_ht": installation,
+        "total_ht": sum(l["total_ht"] for l in result_lines) + delivery + installation,
+        "warnings": warnings,
+    }
+
+
+def final_quote_html(meta, variant, human_notes="", modifications=None):
+    today = date.today()
+    validity = int(rules["validite_devis_jours"])
+    modifications = modifications or []
+
+    lines_html = ""
+    for l in variant["lignes"]:
+        lines_html += f"""
+        <tr>
+          <td>{l['reference']}</td>
+          <td>{l['designation']}</td>
+          <td>{l['quantite']}</td>
+          <td>{money(l['prix_unitaire_net'])}</td>
+          <td>{money(l['total_ht'])}</td>
+        </tr>"""
+
+    warnings_html = ""
+    if variant["warnings"]:
+        warnings_html = "<ul>" + "".join(f"<li>{w}</li>" for w in variant["warnings"]) + "</ul>"
+
+    notes_html = (human_notes or "").replace("\n", "<br>")
+    mods_html = ""
+    if modifications:
+        mods_html = "<ul>" + "".join(
+            f"<li>{m['champ']} : <b>{m['ancienne_valeur']}</b> → <b>{m['nouvelle_valeur']}</b> "
+            f"(source finale : correction humaine)</li>"
+            for m in modifications
+        ) + "</ul>"
+
+    return f"""<!doctype html>
+<html lang="fr"><meta charset="utf-8">
+<title>Devis final Proxima</title>
+<style>
+body{{font-family:Arial,sans-serif;max-width:960px;margin:40px auto;color:#222}}
+h1{{margin-bottom:4px}} .muted{{color:#666}} .ok{{background:#e8f5e9;padding:12px;border-radius:8px}}
+.warning{{background:#fff3cd;padding:12px;border-radius:8px}}
+table{{width:100%;border-collapse:collapse;margin:20px 0}}
+th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
+th{{background:#f5f5f5}} .total{{font-size:1.25rem;font-weight:bold;text-align:right}}
+</style>
+<h1>PROXIMA ÉQUIPEMENTS</h1>
+<div class="muted">DEVIS FINAL — VALIDÉ HUMAINEMENT</div>
+
+<p>
+<b>Client :</b> {meta.get('client_nom') or "À confirmer"}<br>
+<b>Contact :</b> {meta.get('contact') or "À confirmer"}<br>
+<b>Site :</b> {meta.get('site') or "À confirmer"}<br>
+<b>Adresse :</b> {meta.get('adresse') or "À confirmer"}<br>
+<b>Date cible :</b> {meta.get('date_cible') or "À confirmer"}<br>
+<b>Variante :</b> {variant['gamme'].capitalize()}
+</p>
+
+<table>
+<thead><tr><th>Référence</th><th>Désignation</th><th>Qté</th><th>PU net HT</th><th>Total HT</th></tr></thead>
+<tbody>{lines_html}</tbody>
+</table>
+
+<p>
+Livraison : {money(variant['livraison_ht'])}<br>
+Installation : {money(variant['installation_ht'])}
+</p>
+<div class="total">TOTAL HT : {money(variant['total_ht'])}</div>
+
+<h3>Informations / hypothèses validées par le commercial</h3>
+<p>{notes_html or "Aucune note complémentaire."}</p>
+
+{"<div class='warning'><b>Points restant à valider :</b>" + warnings_html + "</div>" if warnings_html else ""}
+
+<h3>Traçabilité des corrections humaines</h3>
+{mods_html or "<p>Aucune correction par rapport au brouillon initial.</p>"}
+
+<p>Validité de l'offre : {validity} jours (jusqu'au {(today+timedelta(days=validity)).strftime("%d/%m/%Y")}).</p>
+<div class="ok"><b>Validation humaine enregistrée.</b> Les références et prix proviennent du catalogue ; les corrections ci-dessus ont été saisies par le commercial.</div>
+</html>"""
+
+
+def compare_values(field, old, new, modifications):
+    old_s = "" if old is None else str(old)
+    new_s = "" if new is None else str(new)
+    if old_s != new_s:
+        modifications.append({
+            "champ": field,
+            "ancienne_valeur": old_s or "non renseigné",
+            "nouvelle_valeur": new_s or "non renseigné",
+        })
+
 # ---------------------------
 # UI
 # ---------------------------
@@ -573,63 +726,308 @@ with tab3:
         st.info("Analyse d'abord une note.")
     else:
         need = CommercialNeed.model_validate(st.session_state["need_json"])
-        variants = st.session_state.get("variants") or [build_variant(need, "standard"), build_variant(need, "premium")]
+        variants = st.session_state.get("variants") or [
+            build_variant(need, "standard"),
+            build_variant(need, "premium")
+        ]
+
+        st.subheader("✏️ Édition humaine du devis")
+        st.caption(
+            "Le brouillon généré par l'outil peut être complété ou corrigé par le commercial. "
+            "Les références et prix restent obligatoirement issus du catalogue."
+        )
 
         for variant in variants:
-            st.subheader(f"Variante {variant['gamme'].capitalize()}")
+            gamme = variant["gamme"]
+            st.markdown(f"## Variante {gamme.capitalize()}")
+
             if not variant["lignes"]:
                 st.error("Impossible de produire cette variante avec les données actuelles.")
+                st.divider()
                 continue
 
-            df = pd.DataFrame([{
-                "Référence": l["reference"],
-                "Désignation": l["designation"],
-                "Qté": l["quantite"],
-                "PU catalogue HT": money(l["prix_catalogue"]),
-                "Remise": f"{l['remise_pct']:.0f}%",
-                "PU net HT": money(l["prix_unitaire_net"]),
-                "Total HT": money(l["total_ht"]),
-                "Stock catalogue": l["stock_catalogue"],
-            } for l in variant["lignes"]])
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            saved_key = f"edited_quote_{gamme}"
+            saved = st.session_state.get(saved_key)
 
-            c1,c2,c3 = st.columns(3)
-            c1.metric("Produits + services HT", money(variant["total_ht"]))
-            c2.metric("Livraison", money(variant["livraison_ht"]))
-            c3.metric("Installation", money(variant["installation_ht"]))
+            with st.form(f"edit_form_{gamme}"):
+                st.markdown("### 1. Informations client à compléter")
+                c1, c2 = st.columns(2)
 
-            for w in variant["warnings"]:
-                st.warning(w)
+                with c1:
+                    client_nom = st.text_input(
+                        "Nom du client",
+                        value=(saved["meta"]["client_nom"] if saved else (need.client.nom or "")),
+                        key=f"client_nom_{gamme}"
+                    )
+                    contact = st.text_input(
+                        "Contact",
+                        value=(saved["meta"]["contact"] if saved else (need.client.contact or "")),
+                        key=f"contact_{gamme}"
+                    )
+                    site = st.text_input(
+                        "Site / ville",
+                        value=(saved["meta"]["site"] if saved else (need.client.site or "")),
+                        key=f"site_{gamme}"
+                    )
 
-            approved = st.checkbox(
-                f"Je valide humainement la variante {variant['gamme']}",
-                key=f"approve_{variant['gamme']}"
-            )
-            html = quote_html(need, variant)
+                with c2:
+                    adresse = st.text_input(
+                        "Adresse exacte",
+                        value=(saved["meta"]["adresse"] if saved else (need.client.adresse or "")),
+                        key=f"adresse_{gamme}"
+                    )
+                    date_cible = st.text_input(
+                        "Date cible",
+                        value=(saved["meta"]["date_cible"] if saved else (need.date_cible or "")),
+                        key=f"date_cible_{gamme}"
+                    )
+                    livraison_enabled = st.checkbox(
+                        "Inclure la livraison",
+                        value=(saved["meta"]["livraison"] if saved else (need.livraison is True)),
+                        key=f"delivery_{gamme}"
+                    )
+                    installation_enabled = st.checkbox(
+                        "Inclure l'installation",
+                        value=(saved["meta"]["installation"] if saved else (need.installation is True)),
+                        key=f"installation_{gamme}"
+                    )
 
-            st.download_button(
-                "Télécharger le brouillon de devis (HTML)",
-                data=html,
-                file_name=f"devis_proxima_{variant['gamme']}.html",
-                mime="text/html",
-                disabled=not approved,
-                key=f"download_{variant['gamme']}"
-            )
-            if not approved:
-                st.caption("Le téléchargement final est verrouillé tant que la validation humaine n'est pas cochée.")
+                st.markdown("### 2. Lignes du devis")
+
+                edited_inputs = []
+                for i, line in enumerate(variant["lignes"]):
+                    st.markdown(f"**Ligne {i+1} — {line['designation']}**")
+                    l1, l2, l3 = st.columns([2.2, 1, 1])
+
+                    # Safe reference choices: original candidate shortlist + current ref
+                    refs = [line["reference"]]
+                    for cand in line.get("candidats", []):
+                        if cand["reference"] not in refs:
+                            refs.append(cand["reference"])
+
+                    # If saved, preserve saved reference if valid
+                    saved_line = None
+                    if saved and i < len(saved["variant"]["lignes"]):
+                        saved_line = saved["variant"]["lignes"][i]
+                        if saved_line["reference"] not in refs:
+                            refs.append(saved_line["reference"])
+
+                    with l1:
+                        selected_ref = st.selectbox(
+                            "Référence catalogue",
+                            options=refs,
+                            index=refs.index(saved_line["reference"]) if saved_line else 0,
+                            key=f"ref_{gamme}_{i}",
+                            help="Seules des références réellement présentes dans le catalogue peuvent être choisies."
+                        )
+                        row = catalog[catalog["reference"] == selected_ref].iloc[0]
+                        st.caption(
+                            f"{row['nom']} · {row['description']} · "
+                            f"Prix catalogue {money(float(row['prix_vente_ht']))} HT · stock {int(row['stock'])}"
+                        )
+
+                    with l2:
+                        quantity = st.number_input(
+                            "Quantité finale",
+                            min_value=1,
+                            step=1,
+                            value=int(saved_line["quantite"] if saved_line else line["quantite"]),
+                            key=f"qty_{gamme}_{i}"
+                        )
+
+                    with l3:
+                        default_disc = float(saved_line["remise_pct"] if saved_line else line["remise_pct"])
+                        discount = st.number_input(
+                            "Remise (%)",
+                            min_value=0.0,
+                            max_value=float(rules["remise_max_commercial_pct"]),
+                            step=1.0,
+                            value=default_disc,
+                            key=f"disc_{gamme}_{i}",
+                            help=f"Plafond commercial : {rules['remise_max_commercial_pct']:.0f}%."
+                        )
+
+                    edited_inputs.append({
+                        "reference": selected_ref,
+                        "quantite": int(quantity),
+                        "remise_pct": float(discount),
+                    })
+
+                st.markdown("### 3. Réponses aux questions / hypothèses")
+                default_notes = saved["meta"].get("human_notes", "") if saved else ""
+                if not default_notes and need.informations_manquantes:
+                    default_notes = "\n".join(f"- {q} : " for q in need.informations_manquantes)
+
+                human_notes = st.text_area(
+                    "Notes complétées par le commercial",
+                    value=default_notes,
+                    height=150,
+                    key=f"notes_{gamme}",
+                    help="Exemple : adresse confirmée, contrainte d'accès, nom du contact, précision donnée par le client."
+                )
+
+                save_clicked = st.form_submit_button(
+                    "💾 Enregistrer les corrections humaines",
+                    type="primary",
+                    use_container_width=True
+                )
+
+            if save_clicked:
+                edited_variant = recalc_edited_variant(
+                    variant,
+                    edited_inputs,
+                    livraison_enabled,
+                    installation_enabled
+                )
+
+                meta = {
+                    "client_nom": client_nom.strip(),
+                    "contact": contact.strip(),
+                    "site": site.strip(),
+                    "adresse": adresse.strip(),
+                    "date_cible": date_cible.strip(),
+                    "livraison": bool(livraison_enabled),
+                    "installation": bool(installation_enabled),
+                    "human_notes": human_notes.strip(),
+                }
+
+                modifications = []
+                compare_values("Nom du client", need.client.nom, meta["client_nom"], modifications)
+                compare_values("Contact", need.client.contact, meta["contact"], modifications)
+                compare_values("Site", need.client.site, meta["site"], modifications)
+                compare_values("Adresse", need.client.adresse, meta["adresse"], modifications)
+                compare_values("Date cible", need.date_cible, meta["date_cible"], modifications)
+                compare_values("Livraison", need.livraison, meta["livraison"], modifications)
+                compare_values("Installation", need.installation, meta["installation"], modifications)
+
+                for i, (orig, edited) in enumerate(zip(variant["lignes"], edited_variant["lignes"]), 1):
+                    compare_values(f"Ligne {i} — référence", orig["reference"], edited["reference"], modifications)
+                    compare_values(f"Ligne {i} — quantité", orig["quantite"], edited["quantite"], modifications)
+                    compare_values(
+                        f"Ligne {i} — remise",
+                        f"{orig['remise_pct']:.0f}%",
+                        f"{edited['remise_pct']:.0f}%",
+                        modifications
+                    )
+
+                st.session_state[saved_key] = {
+                    "meta": meta,
+                    "variant": edited_variant,
+                    "modifications": modifications,
+                }
+                st.success("Corrections humaines enregistrées. Le devis a été recalculé.")
+
+            saved = st.session_state.get(saved_key)
+
+            if saved:
+                st.markdown("### 4. Aperçu du devis corrigé")
+                edited_variant = saved["variant"]
+                meta = saved["meta"]
+
+                preview_df = pd.DataFrame([{
+                    "Référence": l["reference"],
+                    "Désignation": l["designation"],
+                    "Qté finale": l["quantite"],
+                    "PU catalogue HT": money(l["prix_catalogue"]),
+                    "Remise": f"{l['remise_pct']:.0f}%",
+                    "PU net HT": money(l["prix_unitaire_net"]),
+                    "Total HT": money(l["total_ht"]),
+                    "Source quantité": l["source_quantite"],
+                } for l in edited_variant["lignes"]])
+                st.dataframe(preview_df, use_container_width=True, hide_index=True)
+
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Total final HT", money(edited_variant["total_ht"]))
+                m2.metric("Livraison", money(edited_variant["livraison_ht"]))
+                m3.metric("Installation", money(edited_variant["installation_ht"]))
+
+                # Remaining critical fields
+                still_missing = []
+                if not meta["client_nom"]:
+                    still_missing.append("Nom du client")
+                if not meta["contact"]:
+                    still_missing.append("Contact")
+                if not meta["adresse"] and not meta["site"]:
+                    still_missing.append("Site / adresse")
+                if not meta["date_cible"]:
+                    still_missing.append("Date cible")
+
+                for w in edited_variant["warnings"]:
+                    st.warning(w)
+
+                if still_missing:
+                    st.warning(
+                        "Informations encore manquantes : " + ", ".join(still_missing) +
+                        ". Le commercial peut néanmoins conserver le brouillon, mais la validation finale est bloquée."
+                    )
+
+                with st.expander("Voir la traçabilité des corrections humaines"):
+                    if saved["modifications"]:
+                        for mod in saved["modifications"]:
+                            st.write(
+                                f"**{mod['champ']}** : {mod['ancienne_valeur']} → "
+                                f"{mod['nouvelle_valeur']} · source finale : **correction humaine**"
+                            )
+                    else:
+                        st.write("Aucune modification par rapport au brouillon automatique.")
+
+                final_ok = st.checkbox(
+                    f"Je confirme avoir relu et validé humainement la variante {gamme}",
+                    key=f"final_approve_{gamme}",
+                    disabled=bool(still_missing)
+                )
+
+                html = final_quote_html(
+                    meta,
+                    edited_variant,
+                    meta.get("human_notes", ""),
+                    saved["modifications"]
+                )
+
+                st.download_button(
+                    "⬇️ Télécharger le devis final validé (HTML)",
+                    data=html,
+                    file_name=f"devis_proxima_final_{gamme}.html",
+                    mime="text/html",
+                    disabled=not final_ok,
+                    key=f"final_download_{gamme}",
+                    use_container_width=True
+                )
+
+                if still_missing:
+                    st.caption("Complète les champs critiques puis clique de nouveau sur « Enregistrer les corrections humaines ».")
+                elif not final_ok:
+                    st.caption("Le téléchargement final reste verrouillé jusqu'à la validation humaine.")
+
+            else:
+                st.info(
+                    "Le devis automatique est encore un brouillon. "
+                    "Complète ou corrige les informations ci-dessus puis enregistre les corrections."
+                )
+
             st.divider()
+
+        # Global audit trace includes both AI draft and human corrections
+        edited_quotes = {
+            v["gamme"]: st.session_state.get(f"edited_quote_{v['gamme']}")
+            for v in variants
+            if st.session_state.get(f"edited_quote_{v['gamme']}")
+        }
 
         trace = {
             "note_source": st.session_state.get("source_note"),
-            "besoin_structure": need.model_dump(mode="json"),
-            "variantes": variants,
+            "besoin_extrait_par_ia": need.model_dump(mode="json"),
+            "brouillons_automatiques": variants,
+            "devis_corriges_par_humain": edited_quotes,
             "regles_tarifaires": rules,
         }
+
         st.download_button(
-            "Télécharger la trace complète (JSON)",
+            "📋 Télécharger la trace complète IA + catalogue + corrections humaines (JSON)",
             data=json.dumps(trace, ensure_ascii=False, indent=2),
-            file_name="trace_proxima_quote_ai.json",
-            mime="application/json"
+            file_name="trace_proxima_quote_ai_complete.json",
+            mime="application/json",
+            use_container_width=True
         )
 
 st.caption(
