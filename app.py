@@ -482,9 +482,12 @@ def recalc_edited_variant(original_variant, edited_lines, delivery_enabled, inst
 
 
 def final_quote_html(meta, variant, human_notes="", modifications=None):
+    """
+    Devis CLIENT uniquement.
+    Aucune traçabilité interne, aucune ancienne valeur, aucun statut technique.
+    """
     today = date.today()
     validity = int(rules["validite_devis_jours"])
-    modifications = modifications or []
 
     lines_html = ""
     for l in variant["lignes"]:
@@ -497,33 +500,70 @@ def final_quote_html(meta, variant, human_notes="", modifications=None):
           <td>{money(l['total_ht'])}</td>
         </tr>"""
 
-    warnings_html = ""
-    if variant["warnings"]:
-        warnings_html = "<ul>" + "".join(f"<li>{w}</li>" for w in variant["warnings"]) + "</ul>"
+    # Ne garder que les notes réellement complétées par le commercial.
+    cleaned_notes = []
+    for raw in (human_notes or "").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
 
-    notes_html = (human_notes or "").replace("\n", "<br>")
-    mods_html = ""
-    if modifications:
-        mods_html = "<ul>" + "".join(
-            f"<li>{m['champ']} : <b>{m['ancienne_valeur']}</b> → <b>{m['nouvelle_valeur']}</b> "
-            f"(source finale : correction humaine)</li>"
-            for m in modifications
-        ) + "</ul>"
+        visible = line[1:].strip() if line.startswith("-") else line
+
+        # Question restée vide, ex. "Adresse exacte :"
+        if visible.endswith(":"):
+            continue
+
+        # Format "Question : réponse"
+        if ":" in visible:
+            _, answer = visible.split(":", 1)
+            if not answer.strip():
+                continue
+
+        cleaned_notes.append(visible)
+
+    notes_html = ""
+    if cleaned_notes:
+        notes_html = "<ul>" + "".join(f"<li>{n}</li>" for n in cleaned_notes) + "</ul>"
+
+    # Ne jamais exposer la marge ou la mécanique interne.
+    client_warnings = []
+    for w in variant.get("warnings", []):
+        wl = w.lower()
+        if "stock catalogue" in wl or "disponibilité" in wl:
+            client_warnings.append("Disponibilité à confirmer pour une ou plusieurs références.")
+        elif "marge" in wl:
+            continue
+        elif "référence" in wl:
+            client_warnings.append("Une ou plusieurs références restent à confirmer.")
+
+    client_warnings = list(dict.fromkeys(client_warnings))
+    warnings_html = ""
+    if client_warnings:
+        warnings_html = "<ul>" + "".join(f"<li>{w}</li>" for w in client_warnings) + "</ul>"
+
+    livraison_txt = "Incluse" if meta.get("livraison") else "Non incluse"
+    installation_txt = "Incluse" if meta.get("installation") else "Non incluse"
 
     return f"""<!doctype html>
-<html lang="fr"><meta charset="utf-8">
-<title>Devis final Proxima</title>
+<html lang="fr">
+<meta charset="utf-8">
+<title>Devis Proxima Équipements</title>
 <style>
 body{{font-family:Arial,sans-serif;max-width:960px;margin:40px auto;color:#222}}
-h1{{margin-bottom:4px}} .muted{{color:#666}} .ok{{background:#e8f5e9;padding:12px;border-radius:8px}}
+h1{{margin-bottom:4px}}
+.muted{{color:#666}}
 .warning{{background:#fff3cd;padding:12px;border-radius:8px}}
 table{{width:100%;border-collapse:collapse;margin:20px 0}}
 th,td{{border:1px solid #ddd;padding:8px;text-align:left}}
-th{{background:#f5f5f5}} .total{{font-size:1.25rem;font-weight:bold;text-align:right}}
+th{{background:#f5f5f5}}
+.total{{font-size:1.25rem;font-weight:bold;text-align:right}}
+.section{{margin-top:28px}}
 </style>
-<h1>PROXIMA ÉQUIPEMENTS</h1>
-<div class="muted">DEVIS FINAL — VALIDÉ HUMAINEMENT</div>
 
+<h1>PROXIMA ÉQUIPEMENTS</h1>
+<div class="muted">DEVIS COMMERCIAL</div>
+
+<div class="section">
 <p>
 <b>Client :</b> {meta.get('client_nom') or "À confirmer"}<br>
 <b>Contact :</b> {meta.get('contact') or "À confirmer"}<br>
@@ -532,30 +572,39 @@ th{{background:#f5f5f5}} .total{{font-size:1.25rem;font-weight:bold;text-align:r
 <b>Date cible :</b> {meta.get('date_cible') or "À confirmer"}<br>
 <b>Variante :</b> {variant['gamme'].capitalize()}
 </p>
+</div>
 
 <table>
-<thead><tr><th>Référence</th><th>Désignation</th><th>Qté</th><th>PU net HT</th><th>Total HT</th></tr></thead>
+<thead>
+<tr>
+<th>Référence</th>
+<th>Désignation</th>
+<th>Qté</th>
+<th>PU net HT</th>
+<th>Total HT</th>
+</tr>
+</thead>
 <tbody>{lines_html}</tbody>
 </table>
 
+<div class="section">
 <p>
-Livraison : {money(variant['livraison_ht'])}<br>
-Installation : {money(variant['installation_ht'])}
+<b>Livraison :</b> {livraison_txt} — {money(variant['livraison_ht'])}<br>
+<b>Installation :</b> {installation_txt} — {money(variant['installation_ht'])}
 </p>
+</div>
+
 <div class="total">TOTAL HT : {money(variant['total_ht'])}</div>
 
-<h3>Informations / hypothèses validées par le commercial</h3>
-<p>{notes_html or "Aucune note complémentaire."}</p>
+{"<div class='section'><h3>Informations complémentaires</h3>" + notes_html + "</div>" if notes_html else ""}
 
-{"<div class='warning'><b>Points restant à valider :</b>" + warnings_html + "</div>" if warnings_html else ""}
+{"<div class='warning section'><b>Points à confirmer :</b>" + warnings_html + "</div>" if warnings_html else ""}
 
-<h3>Traçabilité des corrections humaines</h3>
-{mods_html or "<p>Aucune correction par rapport au brouillon initial.</p>"}
-
+<div class="section">
 <p>Validité de l'offre : {validity} jours (jusqu'au {(today+timedelta(days=validity)).strftime("%d/%m/%Y")}).</p>
-<div class="ok"><b>Validation humaine enregistrée.</b> Les références et prix proviennent du catalogue ; les corrections ci-dessus ont été saisies par le commercial.</div>
-</html>"""
+</div>
 
+</html>"""
 
 def compare_values(field, old, new, modifications):
     old_s = "" if old is None else str(old)
@@ -987,7 +1036,7 @@ with tab3:
                 st.download_button(
                     "⬇️ Télécharger le devis final validé (HTML)",
                     data=html,
-                    file_name=f"devis_proxima_final_{gamme}.html",
+                    file_name=f"devis_proxima_client_{gamme}.html",
                     mime="text/html",
                     disabled=not final_ok,
                     key=f"final_download_{gamme}",
