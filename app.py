@@ -25,7 +25,6 @@ st.set_page_config(page_title="Quotexia", page_icon="⚡", layout="centered", in
 # ---------------------------
 # Models
 # ---------------------------
-Category = Literal["bureau", "chaise", "table_reunion", "armoire", "cloison", "lampe", "autre"]
 Range = Literal["standard", "premium", "indeterminee"]
 
 class ClientInfo(BaseModel):
@@ -35,7 +34,7 @@ class ClientInfo(BaseModel):
     adresse: Optional[str] = None
 
 class NeedItem(BaseModel):
-    categorie: Category
+    categorie: str
     description_client: str
     quantite: Optional[int] = Field(default=None, ge=1)
     longueur_cm: Optional[float] = None
@@ -60,20 +59,94 @@ class CommercialNeed(BaseModel):
 # ---------------------------
 # Data loading
 # ---------------------------
+REQUIRED_CATALOG_COLUMNS = ["reference", "categorie", "nom", "prix_vente_ht"]
+OPTIONAL_CATALOG_DEFAULTS = {
+    "description": "",
+    "longueur_cm": None,
+    "largeur_cm": None,
+    "capacite_personnes": None,
+    "couleur": "",
+    "gamme": "standard",
+    "prix_achat_ht": None,
+    "stock": 999999,
+    "mots_cles": "",
+}
+
 @st.cache_data
-def load_catalog():
-    df = pd.read_csv(CATALOG_PATH)
-    for c in ["longueur_cm","largeur_cm","capacite_personnes","prix_achat_ht","prix_vente_ht","stock"]:
-        df[c] = pd.to_numeric(df[c], errors="coerce")
-    return df
+def load_default_catalog():
+    return pd.read_csv(CATALOG_PATH)
 
 @st.cache_data
 def load_rules():
     df = pd.read_csv(RULES_PATH)
     return {r["regle"]: float(r["valeur"]) for _, r in df.iterrows()}
 
-catalog = load_catalog()
+def normalize_catalogue_df(df):
+    """Validate and normalize a customer catalogue to Quotexia's internal schema."""
+    if df is None or df.empty:
+        raise ValueError("Le catalogue est vide.")
+
+    df = df.copy()
+    df.columns = [normalize(c).replace(" ", "_") for c in df.columns]
+
+    missing = [c for c in REQUIRED_CATALOG_COLUMNS if c not in df.columns]
+    if missing:
+        raise ValueError(
+            "Colonnes obligatoires manquantes : " + ", ".join(missing)
+        )
+
+    for col, default in OPTIONAL_CATALOG_DEFAULTS.items():
+        if col not in df.columns:
+            df[col] = default
+
+    # Canonical string fields
+    for c in ["reference", "categorie", "nom", "description", "couleur", "gamme", "mots_cles"]:
+        df[c] = df[c].fillna("").astype(str).str.strip()
+
+    # Numeric fields
+    for c in ["longueur_cm", "largeur_cm", "capacite_personnes", "prix_achat_ht", "prix_vente_ht", "stock"]:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    if df["reference"].eq("").any():
+        raise ValueError("Chaque produit doit avoir une référence.")
+    if df["categorie"].eq("").any():
+        raise ValueError("Chaque produit doit avoir une catégorie.")
+    if df["nom"].eq("").any():
+        raise ValueError("Chaque produit doit avoir un nom.")
+    if df["prix_vente_ht"].isna().any():
+        raise ValueError("Chaque produit doit avoir un prix_vente_ht numérique.")
+
+    # Sensible defaults
+    df["stock"] = df["stock"].fillna(999999)
+    df["gamme"] = df["gamme"].replace("", "standard")
+    df["description"] = df["description"].replace("", df["nom"])
+    df["mots_cles"] = df["mots_cles"].replace("", df["description"])
+
+    return df
+
+def get_catalog():
+    if "active_catalog" not in st.session_state:
+        st.session_state["active_catalog"] = normalize_catalogue_df(load_default_catalog())
+        st.session_state["catalog_company_name"] = "Entreprise Démo"
+        st.session_state["catalog_source"] = "catalogue.csv"
+    return st.session_state["active_catalog"]
+
+def set_catalog(df, company_name, source_name):
+    st.session_state["active_catalog"] = normalize_catalogue_df(df)
+    st.session_state["catalog_company_name"] = company_name.strip() or "Entreprise vendeuse"
+    st.session_state["catalog_source"] = source_name
+
+def read_uploaded_catalog(uploaded):
+    name = uploaded.name.lower()
+    uploaded.seek(0)
+    if name.endswith(".csv"):
+        return pd.read_csv(uploaded)
+    if name.endswith(".xlsx"):
+        return pd.read_excel(uploaded, engine="openpyxl")
+    raise ValueError("Format non pris en charge. Utilise CSV ou XLSX.")
+
 rules = load_rules()
+catalog = get_catalog()
 
 # ---------------------------
 # Helpers
@@ -119,7 +192,7 @@ def transcribe_audio(client, uploaded_file, model):
     )
     return result.text
 
-SYSTEM_PROMPT = """
+BASE_SYSTEM_PROMPT = """
 Tu analyses la note d'un commercial après un rendez-vous client pour préparer un brouillon de devis.
 Ta mission est UNIQUEMENT d'extraire le besoin et de le normaliser.
 
@@ -128,19 +201,34 @@ Règles impératives :
 - Toute information absente ou incertaine doit être null ou placée dans informations_manquantes.
 - Ne propose JAMAIS de référence produit, de prix, de stock ou de disponibilité : ils proviennent d'une base externe.
 - Distingue la demande explicite du client d'une recommandation.
-- Catégories autorisées : bureau, chaise, table_reunion, armoire, cloison, lampe, autre.
-- Gamme autorisée : standard, premium, indeterminee.
+- Le champ categorie doit utiliser, lorsque c'est raisonnablement possible, une catégorie présente dans le catalogue actif.
+- Si aucune catégorie du catalogue ne correspond clairement, utilise "autre".
+- Gamme : utilise standard, premium ou indeterminee lorsque pertinent ; sinon conserve le terme exprimé par le client.
 - Convertis les dimensions en centimètres quand c'est possible.
 - Si le client demande deux options de niveau de gamme, variantes_standard_premium = true.
 - livraison, installation et reprise valent true seulement si demandées/confirmées, false seulement si explicitement exclues, sinon null.
 - Les informations manquantes doivent être courtes et directement actionnables.
 """
 
+def build_system_prompt():
+    active = get_catalog()
+    categories = sorted({
+        str(x).strip() for x in active["categorie"].dropna().tolist()
+        if str(x).strip()
+    })
+    # Keep prompt bounded in case a large catalogue has many categories.
+    categories = categories[:100]
+    return BASE_SYSTEM_PROMPT + (
+        "\n\nCatégories actuellement disponibles dans le catalogue client :\n- "
+        + "\n- ".join(categories)
+    )
+
+
 def extract_with_ai(client, text, model):
     # Official Responses API structured outputs through Pydantic.
     response = client.responses.parse(
         model=model,
-        instructions=SYSTEM_PROMPT,
+        instructions=build_system_prompt(),
         input=text,
         text_format=CommercialNeed,
     )
@@ -198,28 +286,45 @@ def demo_need():
     )
 
 def score_candidate(row, need, target_range=None):
-    if row["categorie"] != need.categorie:
-        return -9999, []
+    row_cat = normalize(row.get("categorie"))
+    need_cat = normalize(need.categorie)
 
-    score = 40.0
-    reasons = ["catégorie compatible"]
+    score = 0.0
+    reasons = []
 
-    wanted_range = target_range or (None if need.gamme == "indeterminee" else need.gamme)
+    # Category match. Exact is best, but we still allow semantic keyword matching.
+    if need_cat and need_cat != "autre":
+        if row_cat == need_cat:
+            score += 45
+            reasons.append("catégorie exacte")
+        elif need_cat in row_cat or row_cat in need_cat:
+            score += 28
+            reasons.append("catégorie proche")
+        else:
+            score -= 18
+
+    wanted_range = target_range or (
+        None if normalize(getattr(need, "gamme", "")) in ("", "indeterminee")
+        else normalize(need.gamme)
+    )
+    row_range = normalize(row.get("gamme"))
     if wanted_range:
-        if row["gamme"] == wanted_range:
-            score += 22
+        if row_range == wanted_range:
+            score += 18
             reasons.append(f"gamme {wanted_range}")
-        else:
-            score -= 12
-
-    if need.couleur:
-        if normalize(row["couleur"]) == normalize(need.couleur):
-            score += 15
-            reasons.append("couleur correspondante")
-        else:
+        elif row_range:
             score -= 5
 
-    if need.longueur_cm and not pd.isna(row["longueur_cm"]):
+    if need.couleur:
+        if normalize(row.get("couleur")) == normalize(need.couleur):
+            score += 12
+            reasons.append("couleur correspondante")
+        elif normalize(need.couleur) in normalize(
+            f"{row.get('description','')} {row.get('mots_cles','')}"
+        ):
+            score += 6
+
+    if need.longueur_cm and not pd.isna(row.get("longueur_cm")):
         diff = abs(float(row["longueur_cm"]) - need.longueur_cm)
         if diff <= 10:
             score += 15
@@ -227,44 +332,60 @@ def score_candidate(row, need, target_range=None):
         elif diff <= 30:
             score += 8
         else:
-            score -= min(12, diff/20)
+            score -= min(12, diff / 20)
 
-    if need.largeur_cm and not pd.isna(row["largeur_cm"]):
+    if need.largeur_cm and not pd.isna(row.get("largeur_cm")):
         diff = abs(float(row["largeur_cm"]) - need.largeur_cm)
         if diff <= 10:
             score += 10
         elif diff <= 25:
             score += 5
 
-    if need.capacite_personnes and not pd.isna(row["capacite_personnes"]):
+    if need.capacite_personnes and not pd.isna(row.get("capacite_personnes")):
         capacity = int(row["capacite_personnes"])
         if capacity >= need.capacite_personnes:
-            score += 18
+            score += 16
             reasons.append("capacité suffisante")
-            score -= max(0, capacity - need.capacite_personnes) * 0.5
+            score -= max(0, capacity - need.capacite_personnes) * 0.4
         else:
-            score -= 30
+            score -= 28
             reasons.append("capacité insuffisante")
 
-    text = normalize(f"{row['nom']} {row['description']} {row['mots_cles']}")
-    query_tokens = set(normalize(need.description_client + " " + " ".join(need.contraintes)).split())
-    useful = [t for t in query_tokens if len(t) >= 4 and t in text]
-    score += min(15, len(useful)*3)
+    product_text = normalize(
+        f"{row.get('categorie','')} {row.get('nom','')} "
+        f"{row.get('description','')} {row.get('mots_cles','')} "
+        f"{row.get('couleur','')} {row.get('gamme','')}"
+    )
+    request_text = normalize(
+        f"{need.categorie} {need.description_client} "
+        + " ".join(getattr(need, "contraintes", []) or [])
+    )
+    query_tokens = {
+        t for t in request_text.replace("-", " ").split()
+        if len(t) >= 4
+    }
+    useful = [t for t in query_tokens if t in product_text]
+    score += min(28, len(useful) * 4)
     if useful:
-        reasons.append("mots-clés : " + ", ".join(useful[:4]))
+        reasons.append("mots-clés : " + ", ".join(useful[:5]))
+
+    # Do not present completely unrelated products as valid.
+    if score < 12:
+        return -9999, reasons
 
     return score, reasons
 
 def find_candidates(need, target_range=None, top_n=3):
     scores = []
-    for idx, row in catalog.iterrows():
+    active_catalog = get_catalog()
+    for idx, row in active_catalog.iterrows():
         score, reasons = score_candidate(row, need, target_range)
         if score > -100:
             scores.append((score, idx, reasons))
     scores.sort(reverse=True, key=lambda x: x[0])
     results = []
     for score, idx, reasons in scores[:top_n]:
-        r = catalog.loc[idx].to_dict()
+        r = active_catalog.loc[idx].to_dict()
         r["score"] = round(score, 1)
         r["raisons"] = reasons
         results.append(r)
@@ -290,8 +411,8 @@ def build_variant(need_obj, target_range):
     total_cost = 0.0
 
     for need in need_obj.besoins:
-        if need.categorie == "autre":
-            warnings.append(f"Produit non couvert par le catalogue simulé : {need.description_client}")
+        if normalize(need.categorie) == "autre":
+            warnings.append(f"Produit non couvert par le catalogue actif : {need.description_client}")
             continue
         if not need.quantite:
             warnings.append(f"Quantité manquante : {need.description_client}")
@@ -416,7 +537,7 @@ th{{background:#F2F5FA;color:#0A0F2C}}
 .totals div{{display:flex;justify-content:space-between;padding:7px 0}}
 .ttc{{font-size:1.25rem;font-weight:bold;border-top:2px solid #0A0F2C;margin-top:4px;padding-top:10px!important}}
 </style>
-<h1>{(need_obj.client.nom or 'CLIENT').upper()}</h1>
+<h1>{st.session_state.get('catalog_company_name', 'Entreprise vendeuse').upper()}</h1>
 <div class="muted">BROUILLON DE DEVIS — VALIDATION HUMAINE REQUISE</div>
 <p>
 <b>Client :</b> {need_obj.client.nom or "À confirmer"}<br>
@@ -452,7 +573,8 @@ def recalc_edited_variant(original_variant, edited_lines, delivery_enabled, inst
         qty = int(edited["quantite"])
         discount_pct = float(edited["remise_pct"])
 
-        matches = catalog[catalog["reference"] == ref]
+        active_catalog = get_catalog()
+        matches = active_catalog[active_catalog["reference"] == ref]
         if matches.empty:
             warnings.append(f"Référence {ref} introuvable dans le catalogue : ligne bloquée.")
             continue
@@ -599,7 +721,7 @@ th:last-child{{border-radius:0 8px 8px 0}}
 </style>
 
 <div class="header">
-  <div class="client-title">{(meta.get('client_nom') or 'CLIENT').upper()}</div>
+  <div class="client-title">{st.session_state.get("catalog_company_name", "Entreprise vendeuse").upper()}</div>
   <div class="doc-label">DEVIS COMMERCIAL</div>
 </div>
 
@@ -924,7 +1046,7 @@ hr {
     <div class="qx-mark">Q</div>
     <div class="qx-name">Quotexia</div>
 </div>
-<div class="qx-tagline">Application mobile de devis assisté par IA</div>
+<div class="qx-tagline">Votre catalogue. Vos règles. Vos devis.</div>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
@@ -943,8 +1065,122 @@ with st.sidebar:
     text_model = st.text_input("Modèle texte", value=(st.secrets.get("OPENAI_TEXT_MODEL", os.getenv("OPENAI_TEXT_MODEL", "gpt-5.6-luna")) if hasattr(st, "secrets") else os.getenv("OPENAI_TEXT_MODEL", "gpt-5.6-luna")))
     transcribe_model = st.text_input("Modèle transcription", value=(st.secrets.get("OPENAI_TRANSCRIBE_MODEL", os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe")) if hasattr(st, "secrets") else os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe")))
     st.divider()
-    st.metric("Références catalogue", len(catalog))
-    st.caption("Base simulée pour le MVP. Prix, stock et références viennent uniquement du CSV.")
+    st.metric("Références catalogue", len(get_catalog()))
+    st.caption("Les références, prix et stocks viennent uniquement du catalogue actif.")
+
+
+with st.expander("🏢 Catalogue de l’entreprise", expanded=False):
+    active_catalog = get_catalog()
+    active_company = st.session_state.get("catalog_company_name", "Entreprise vendeuse")
+
+    st.markdown(f"**Catalogue actif : {active_company}**")
+    st.caption(
+        f"{len(active_catalog)} références · "
+        f"{active_catalog['categorie'].nunique()} catégories · "
+        f"source : {st.session_state.get('catalog_source', 'catalogue.csv')}"
+    )
+
+    company_name_input = st.text_input(
+        "Nom de l’entreprise vendeuse",
+        value=active_company if active_company != "Entreprise Démo" else "",
+        placeholder="Ex. Martin Électricité",
+        key="new_catalog_company"
+    )
+
+    uploaded_catalog = st.file_uploader(
+        "Importer son catalogue (CSV ou Excel)",
+        type=["csv", "xlsx"],
+        key="customer_catalog_upload",
+        help="Le catalogue remplace le catalogue de démonstration pour cette session."
+    )
+
+    if uploaded_catalog is not None:
+        try:
+            preview_raw = read_uploaded_catalog(uploaded_catalog)
+            preview_catalog = normalize_catalogue_df(preview_raw)
+            st.success(
+                f"Catalogue reconnu : {len(preview_catalog)} références "
+                f"et {preview_catalog['categorie'].nunique()} catégories."
+            )
+            st.dataframe(
+                preview_catalog[
+                    ["reference", "categorie", "nom", "prix_vente_ht", "stock"]
+                ].head(8),
+                use_container_width=True,
+                hide_index=True
+            )
+
+            if st.button("✅ Utiliser ce catalogue", use_container_width=True):
+                if not company_name_input.strip():
+                    st.error("Renseigne le nom de l’entreprise vendeuse avant d’activer le catalogue.")
+                else:
+                    set_catalog(
+                        preview_raw,
+                        company_name_input,
+                        uploaded_catalog.name
+                    )
+                    # Catalogue changes invalidate old AI analyses and quotes.
+                    for k in [
+                        "need_json", "variants",
+                        "edited_quote_standard", "edited_quote_premium"
+                    ]:
+                        st.session_state.pop(k, None)
+                    st.success("Catalogue client activé.")
+                    st.rerun()
+        except Exception as e:
+            st.error(f"Catalogue non valide : {e}")
+
+    template_df = pd.DataFrame([
+        {
+            "reference": "REF-001",
+            "categorie": "categorie_exemple",
+            "nom": "Produit exemple",
+            "description": "Description claire du produit",
+            "prix_vente_ht": 100.00,
+            "prix_achat_ht": 60.00,
+            "stock": 25,
+            "gamme": "standard",
+            "couleur": "",
+            "longueur_cm": "",
+            "largeur_cm": "",
+            "capacite_personnes": "",
+            "mots_cles": "mot cle usage fonction",
+        }
+    ])
+    st.download_button(
+        "⬇️ Télécharger le modèle de catalogue CSV",
+        data=template_df.to_csv(index=False).encode("utf-8-sig"),
+        file_name="modele_catalogue_quotexia.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+
+    with st.expander("Format attendu"):
+        st.markdown(
+            """
+**Obligatoire :** `reference`, `categorie`, `nom`, `prix_vente_ht`
+
+**Optionnel mais recommandé :** `description`, `stock`, `gamme`,
+`prix_achat_ht`, `couleur`, `longueur_cm`, `largeur_cm`,
+`capacite_personnes`, `mots_cles`.
+
+Les colonnes optionnelles peuvent être absentes : Quotexia ajoutera des valeurs par défaut.
+            """
+        )
+
+    if st.button("↩️ Revenir au catalogue de démonstration", use_container_width=True):
+        set_catalog(
+            load_default_catalog(),
+            "Entreprise Démo",
+            "catalogue.csv"
+        )
+        for k in [
+            "need_json", "variants",
+            "edited_quote_standard", "edited_quote_premium"
+        ]:
+            st.session_state.pop(k, None)
+        st.rerun()
+
 
 tab1, tab2, tab3 = st.tabs(["1. Saisie", "2. Analyse & catalogue", "3. Devis"])
 
@@ -1105,7 +1341,7 @@ with tab2:
         with st.expander("Traçabilité"):
             st.markdown(
                 "- **Demande / quantités / contraintes** : note commerciale, interprétée par l'IA.\n"
-                "- **Références / prix / stock** : `catalogue.csv`.\n"
+                "- **Références / prix / stock** : catalogue actif de l’entreprise.\n"
                 "- **Remises / livraison / installation / validité** : `regles_tarifaires.csv`.\n"
                 "- **Envoi client** : jamais automatique dans ce prototype."
             )
@@ -1209,7 +1445,8 @@ with tab3:
                             key=f"ref_{gamme}_{i}",
                             help="Seules des références réellement présentes dans le catalogue peuvent être choisies."
                         )
-                        row = catalog[catalog["reference"] == selected_ref].iloc[0]
+                        active_catalog = get_catalog()
+                        row = active_catalog[active_catalog["reference"] == selected_ref].iloc[0]
                         st.caption(
                             f"{row['nom']} · {row['description']} · "
                             f"Prix catalogue {money(float(row['prix_vente_ht']))} HT · stock {int(row['stock'])}"
@@ -1374,6 +1611,7 @@ with tab3:
                 pdf_bytes = build_quote_pdf(
                     meta=meta,
                     variant=edited_variant,
+                    seller_company=st.session_state.get("catalog_company_name", "Entreprise vendeuse"),
                     tva_pct=float(rules.get("tva_pct", 20)),
                     validity_days=int(rules["validite_devis_jours"]),
                     human_notes=meta.get("human_notes", "")

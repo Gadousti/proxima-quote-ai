@@ -173,3 +173,41 @@ client, contact, site, adresse, lignes produits, quantités, prix, livraison, in
 - Thème clair forcé via `.streamlit/config.toml`.
 - Recoloration explicite des labels, champs, cartes, onglets et métriques.
 - Aucun changement fonctionnel métier.
+
+
+## V7 — catalogue configurable par entreprise
+
+Quotexia n'est plus lié à un seul catalogue de démonstration.
+
+Chaque entreprise cliente peut :
+- renseigner son nom ;
+- importer son propre catalogue en CSV ou XLSX ;
+- utiliser ses propres catégories de produits ;
+- utiliser ses propres références, prix et stocks ;
+- générer ensuite les devis uniquement à partir de ce catalogue actif.
+
+Colonnes obligatoires :
+`reference`, `categorie`, `nom`, `prix_vente_ht`.
+
+Colonnes optionnelles :
+`description`, `stock`, `gamme`, `prix_achat_ht`, `couleur`,
+`longueur_cm`, `largeur_cm`, `capacite_personnes`, `mots_cles`.
+
+Dans cette version MVP Streamlit, le catalogue importé est conservé pendant la session utilisateur.
+Pour une version SaaS industrielle, les catalogues seraient stockés dans une base sécurisée par entreprise avec authentification.
+
+
+## V7.1 — entreprise vendeuse affichée sur chaque devis
+
+Le nom saisi dans **Catalogue de l’entreprise > Nom de l’entreprise vendeuse**
+est désormais utilisé comme émetteur du devis.
+
+Exemple :
+- entreprise vendeuse : `Martin Électricité`
+- client final détecté dans le rendez-vous : `Horizon Conseil`
+
+Le PDF affiche **MARTIN ÉLECTRICITÉ** en en-tête, puis `Horizon Conseil`
+dans la partie Client.
+
+L’activation d’un catalogue personnalisé exige maintenant que le nom
+de l’entreprise vendeuse soit renseigné.
