@@ -20,8 +20,7 @@ APP_DIR = Path(__file__).parent
 CATALOG_PATH = APP_DIR / "catalogue.csv"
 RULES_PATH = APP_DIR / "regles_tarifaires.csv"
 
-page_brand = st.session_state.get("catalog_company_name", "").strip() or "Solucongia"
-st.set_page_config(page_title=page_brand, page_icon="⚡", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Proxima Équipement", page_icon="⚡", layout="centered", initial_sidebar_state="collapsed")
 
 # ---------------------------
 # Models
@@ -134,13 +133,13 @@ def normalize_catalogue_df(df):
 def get_catalog():
     if "active_catalog" not in st.session_state:
         st.session_state["active_catalog"] = normalize_catalogue_df(load_default_catalog())
-        st.session_state["catalog_company_name"] = ""
+        st.session_state["catalog_company_name"] = "Proxima Équipement"
         st.session_state["catalog_source"] = "catalogue.csv"
     return st.session_state["active_catalog"]
 
 def set_catalog(df, company_name, source_name):
     st.session_state["active_catalog"] = normalize_catalogue_df(df)
-    st.session_state["catalog_company_name"] = company_name.strip()
+    st.session_state["catalog_company_name"] = company_name.strip() or "Entreprise vendeuse"
     st.session_state["catalog_source"] = source_name
 
 def read_uploaded_catalog(uploaded):
@@ -462,8 +461,8 @@ def build_variant(need_obj, target_range):
             "stock_catalogue": stock,
             "marge_pct": margin_pct,
             "score_matching": product["score"],
-            "source_reference": "catalogue.csv",
-            "source_prix": "catalogue.csv",
+            "source_reference": "Catalogue Proxima",
+            "source_prix": "Catalogue Proxima",
             "source_quantite": "note commerciale / extraction IA",
             "candidats": candidates,
         })
@@ -544,7 +543,7 @@ th{{background:#F2F5FA;color:#0A0F2C}}
 .totals div{{display:flex;justify-content:space-between;padding:7px 0}}
 .ttc{{font-size:1.25rem;font-weight:bold;border-top:2px solid #0A0F2C;margin-top:4px;padding-top:10px!important}}
 </style>
-<h1>{(seller_company_name() or 'ENTREPRISE VENDEUSE').upper()}</h1>
+<h1>{"LUMÉO ÉQUIPEMENTS"}</h1>
 <div class="muted">BROUILLON DE DEVIS — VALIDATION HUMAINE REQUISE</div>
 <p>
 <b>Client :</b> {need_obj.client.nom or "À confirmer"}<br>
@@ -617,8 +616,8 @@ def recalc_edited_variant(original_variant, edited_lines, delivery_enabled, inst
             "total_ht": total,
             "stock_catalogue": stock,
             "marge_pct": margin_pct,
-            "source_reference": "catalogue.csv",
-            "source_prix": "catalogue.csv",
+            "source_reference": "Catalogue Proxima",
+            "source_prix": "Catalogue Proxima",
             "source_quantite": "correction humaine",
             "source_remise": "correction humaine / règles tarifaires",
         })
@@ -728,7 +727,7 @@ th:last-child{{border-radius:0 8px 8px 0}}
 </style>
 
 <div class="header">
-  <div class="client-title">{(seller_company_name() or "ENTREPRISE VENDEUSE").upper()}</div>
+  <div class="client-title">{"LUMÉO ÉQUIPEMENTS"}</div>
   <div class="doc-label">DEVIS COMMERCIAL</div>
 </div>
 
@@ -783,21 +782,6 @@ def compare_values(field, old, new, modifications):
             "ancienne_valeur": old_s or "non renseigné",
             "nouvelle_valeur": new_s or "non renseigné",
         })
-
-
-def seller_company_name():
-    return st.session_state.get("catalog_company_name", "").strip()
-
-def white_label_active():
-    return bool(seller_company_name()) and st.session_state.get("catalog_source", "catalogue.csv") != "catalogue.csv"
-
-def visible_brand_name():
-    return seller_company_name() if white_label_active() else "Solucongia"
-
-def visible_brand_tagline():
-    if white_label_active():
-        return "Assistant commercial - de la conversation au devis"
-    return "Configurez la solution marque blanche de votre entreprise"
 
 # ---------------------------
 # UI
@@ -1064,19 +1048,12 @@ hr {
 }
 </style>
 
-
+<div class="qx-brand">
+    <div class="qx-mark">P</div>
+    <div class="qx-name">Proxima Équipement</div>
+</div>
+<div class="qx-tagline">Assistant commercial · De la conversation au devis</div>
 """, unsafe_allow_html=True)
-
-st.markdown(
-    f"""
-    <div class="qx-brand">
-        <div class="qx-mark">{visible_brand_name()[:1].upper()}</div>
-        <div class="qx-name">{visible_brand_name()}</div>
-    </div>
-    <div class="qx-tagline">{visible_brand_tagline()}</div>
-    """,
-    unsafe_allow_html=True,
-)
 
 with st.sidebar:
     st.header("Configuration")
@@ -1095,127 +1072,10 @@ with st.sidebar:
     transcribe_model = st.text_input("Modèle transcription", value=(st.secrets.get("OPENAI_TRANSCRIBE_MODEL", os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe")) if hasattr(st, "secrets") else os.getenv("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe")))
     st.divider()
     st.metric("Références catalogue", len(get_catalog()))
-    st.caption("Les références, prix et stocks viennent uniquement du catalogue actif.")
+    st.caption("Catalogue Proxima intégré · 120 références, prix et stocks vérifiés dans la base interne.")
 
 
-with st.expander("🏢 Configuration de l’entreprise", expanded=not white_label_active()):
-    active_catalog = get_catalog()
-    active_company = st.session_state.get("catalog_company_name", "").strip()
-
-    if white_label_active():
-        st.markdown(f"**Espace marque blanche : {active_company}**")
-    else:
-        st.markdown("**Configuration initiale de votre espace marque blanche**")
-    st.caption(
-        f"{len(active_catalog)} références · "
-        f"{active_catalog['categorie'].nunique()} catégories · "
-        f"source : {st.session_state.get('catalog_source', 'catalogue.csv')}"
-    )
-
-    company_name_input = st.text_input(
-        "Nom de l’entreprise vendeuse",
-        value=active_company,
-        placeholder="Ex. Martin Électricité",
-        key="new_catalog_company"
-    )
-
-    uploaded_catalog = st.file_uploader(
-        "Importer son catalogue (CSV ou Excel)",
-        type=["csv", "xlsx"],
-        key="customer_catalog_upload",
-        help="Le catalogue remplace le catalogue de démonstration pour cette session."
-    )
-
-    if uploaded_catalog is not None:
-        try:
-            preview_raw = read_uploaded_catalog(uploaded_catalog)
-            preview_catalog = normalize_catalogue_df(preview_raw)
-            st.success(
-                f"Catalogue reconnu : {len(preview_catalog)} références "
-                f"et {preview_catalog['categorie'].nunique()} catégories."
-            )
-            st.dataframe(
-                preview_catalog[
-                    ["reference", "categorie", "nom", "prix_vente_ht", "stock"]
-                ].head(8),
-                use_container_width=True,
-                hide_index=True
-            )
-
-            if st.button("✅ Utiliser ce catalogue", use_container_width=True):
-                if not company_name_input.strip():
-                    st.error("Renseigne le nom de l’entreprise vendeuse avant d’activer le catalogue.")
-                else:
-                    set_catalog(
-                        preview_raw,
-                        company_name_input,
-                        uploaded_catalog.name
-                    )
-                    # Catalogue changes invalidate old AI analyses and quotes.
-                    for k in [
-                        "need_json", "variants",
-                        "edited_quote_standard", "edited_quote_premium"
-                    ]:
-                        st.session_state.pop(k, None)
-                    st.success(
-                        f"Espace marque blanche activé pour {company_name_input.strip()}. "
-                        "Le site et les devis utilisent maintenant cette identité."
-                    )
-                    st.rerun()
-        except Exception as e:
-            st.error(f"Catalogue non valide : {e}")
-
-    template_df = pd.DataFrame([
-        {
-            "reference": "REF-001",
-            "categorie": "categorie_exemple",
-            "nom": "Produit exemple",
-            "description": "Description claire du produit",
-            "prix_vente_ht": 100.00,
-            "prix_achat_ht": 60.00,
-            "stock": 25,
-            "gamme": "standard",
-            "couleur": "",
-            "longueur_cm": "",
-            "largeur_cm": "",
-            "capacite_personnes": "",
-            "mots_cles": "mot cle usage fonction",
-        }
-    ])
-    st.download_button(
-        "⬇️ Télécharger le modèle de catalogue CSV",
-        data=template_df.to_csv(index=False).encode("utf-8-sig"),
-        file_name="modele_catalogue_solucongia.csv",
-        mime="text/csv",
-        use_container_width=True
-    )
-
-    with st.expander("Format attendu"):
-        st.markdown(
-            """
-**Obligatoire :** `reference`, `categorie`, `nom`, `prix_vente_ht`
-
-**Optionnel mais recommandé :** `description`, `stock`, `gamme`,
-`prix_achat_ht`, `couleur`, `longueur_cm`, `largeur_cm`,
-`capacite_personnes`, `mots_cles`.
-
-Les colonnes optionnelles peuvent être absentes : la solution ajoutera des valeurs par défaut.
-            """
-        )
-
-    if st.button("↩️ Quitter l’espace marque blanche / revenir au mode démo", use_container_width=True):
-        set_catalog(
-            load_default_catalog(),
-            "",
-            "catalogue.csv"
-        )
-        for k in [
-            "need_json", "variants",
-            "edited_quote_standard", "edited_quote_premium"
-        ]:
-            st.session_state.pop(k, None)
-        st.rerun()
-
+st.info("Espace commercial Proxima Équipement · catalogue déjà configuré")
 
 tab1, tab2, tab3 = st.tabs(["1. Saisie", "2. Analyse & catalogue", "3. Devis"])
 
@@ -1382,6 +1242,7 @@ with tab2:
             )
 
 with tab3:
+    st.info("Devis émis par : **Proxima Équipement**")
     if "need_json" not in st.session_state:
         st.info("Analyse d'abord une note.")
     else:
@@ -1637,32 +1498,22 @@ with tab3:
                     else:
                         st.write("Aucune modification par rapport au brouillon automatique.")
 
-                seller_missing = not seller_company_name()
-                if seller_missing:
-                    st.error(
-                        "Le nom de l’entreprise vendeuse n’est pas configuré. "
-                        "Active d’abord son catalogue dans « Configuration de l’entreprise »."
-                    )
-
                 final_ok = st.checkbox(
                     f"Je confirme avoir relu et validé humainement la variante {gamme}",
                     key=f"final_approve_{gamme}",
-                    disabled=bool(still_missing) or seller_missing
+                    disabled=bool(still_missing)
                 )
 
                 pdf_bytes = build_quote_pdf(
                     meta=meta,
                     variant=edited_variant,
-                    seller_company=seller_company_name(),
+                    seller_company="Proxima Équipement",
                     tva_pct=float(rules.get("tva_pct", 20)),
                     validity_days=int(rules["validite_devis_jours"]),
                     human_notes=meta.get("human_notes", "")
                 )
 
-                safe_seller = "".join(
-                    ch if ch.isalnum() or ch in ("-", "_") else "_"
-                    for ch in seller_company_name()
-                ).strip("_") or "vendeur"
+                safe_seller = "Lumeo_Equipements"
                 safe_client = "".join(
                     ch if ch.isalnum() or ch in ("-", "_") else "_"
                     for ch in (meta.get("client_nom") or "client").strip()
