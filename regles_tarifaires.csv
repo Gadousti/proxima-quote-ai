@@ -1,0 +1,8 @@
+﻿regle,valeur
+marge_minimale_pct,20
+remise_qte_20_pct,5
+remise_qte_50_pct,8
+remise_max_commercial_pct,10
+livraison_standard_ht,150
+installation_unitaire_ht,35
+validite_devis_jours,30

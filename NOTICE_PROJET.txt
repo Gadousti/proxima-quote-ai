@@ -1,0 +1,14 @@
+PROXIMA QUOTE AI — NOTICE PROJET SCOLAIRE
+
+Ce prototype est volontairement un MVP.
+Les données du catalogue et les règles tarifaires sont synthétiques.
+Aucune référence, disponibilité ou règle commerciale réelle de Proxima Équipements n'a été inventée.
+
+Principe :
+- l'IA interprète la note du commercial ;
+- le catalogue est la seule source autorisée pour les références/prix/stock ;
+- les calculs tarifaires sont déterministes ;
+- le devis ne peut être téléchargé comme version validée qu'après confirmation humaine.
+
+Pour une version industrielle :
+remplacer les CSV par les interfaces réelles catalogue / stock / ERP / CRM.

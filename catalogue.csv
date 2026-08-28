@@ -1,0 +1,121 @@
+﻿reference,categorie,nom,description,longueur_cm,largeur_cm,capacite_personnes,couleur,gamme,prix_achat_ht,prix_vente_ht,stock,mots_cles
+BUR-0001,bureau,Bureau Bench,"Bureau Bench standard, finition blanc, 180 x 80 cm",180,80,,blanc,standard,180,330,37,bureau travail professionnel poste individuel blanc standard
+BUR-0002,bureau,Bureau Compact,"Bureau Compact standard, finition noir, 120 x 70 cm",120,70,,noir,standard,195,350,8,bureau travail professionnel poste individuel noir standard
+BUR-0003,bureau,Bureau Direction,"Bureau Direction standard, finition noir, 120 x 70 cm",120,70,,noir,standard,170,295,6,bureau travail professionnel poste individuel noir standard
+BUR-0004,bureau,Bureau Compact,"Bureau Compact standard, finition blanc, 120 x 70 cm",120,70,,blanc,standard,185,325,17,bureau travail professionnel poste individuel blanc standard
+BUR-0005,bureau,Bureau Compact,"Bureau Compact standard, finition chêne, 140 x 70 cm",140,70,,chêne,standard,165,300,10,bureau travail professionnel poste individuel chêne standard
+BUR-0006,bureau,Bureau Bench,"Bureau Bench standard, finition chêne, 140 x 70 cm",140,70,,chêne,standard,165,280,15,bureau travail professionnel poste individuel chêne standard
+BUR-0007,bureau,Bureau Bench,"Bureau Bench standard, finition blanc, 120 x 70 cm",120,70,,blanc,standard,190,320,34,bureau travail professionnel poste individuel blanc standard
+BUR-0008,bureau,Bureau Direction,"Bureau Direction standard, finition noir, 180 x 80 cm",180,80,,noir,standard,185,325,22,bureau travail professionnel poste individuel noir standard
+BUR-0009,bureau,Bureau Ergo,"Bureau Ergo standard, finition blanc, 140 x 70 cm",140,70,,blanc,standard,160,280,34,bureau travail professionnel poste individuel blanc standard
+BUR-0010,bureau,Bureau Bench,"Bureau Bench standard, finition chêne, 180 x 80 cm",180,80,,chêne,standard,185,300,10,bureau travail professionnel poste individuel chêne standard
+BUR-0011,bureau,Bureau Direction,"Bureau Direction premium, finition blanc, 160 x 80 cm",160,80,,blanc,premium,235,405,5,bureau travail professionnel poste individuel blanc premium
+BUR-0012,bureau,Bureau Compact,"Bureau Compact premium, finition chêne, 160 x 80 cm",160,80,,chêne,premium,245,430,34,bureau travail professionnel poste individuel chêne premium
+BUR-0013,bureau,Bureau Direction,"Bureau Direction premium, finition blanc, 120 x 70 cm",120,70,,blanc,premium,290,505,45,bureau travail professionnel poste individuel blanc premium
+BUR-0014,bureau,Bureau Compact,"Bureau Compact premium, finition blanc, 160 x 80 cm",160,80,,blanc,premium,290,465,55,bureau travail professionnel poste individuel blanc premium
+BUR-0015,bureau,Bureau Direction,"Bureau Direction premium, finition noir, 180 x 80 cm",180,80,,noir,premium,280,495,32,bureau travail professionnel poste individuel noir premium
+BUR-0016,bureau,Bureau Bench,"Bureau Bench premium, finition blanc, 120 x 70 cm",120,70,,blanc,premium,250,450,21,bureau travail professionnel poste individuel blanc premium
+BUR-0017,bureau,Bureau Ergo,"Bureau Ergo premium, finition chêne, 140 x 70 cm",140,70,,chêne,premium,265,435,34,bureau travail professionnel poste individuel chêne premium
+BUR-0018,bureau,Bureau Compact,"Bureau Compact premium, finition blanc, 180 x 80 cm",180,80,,blanc,premium,245,435,11,bureau travail professionnel poste individuel blanc premium
+BUR-0019,bureau,Bureau Direction,"Bureau Direction premium, finition chêne, 160 x 80 cm",160,80,,chêne,premium,295,475,46,bureau travail professionnel poste individuel chêne premium
+BUR-0020,bureau,Bureau Direction,"Bureau Direction premium, finition blanc, 140 x 70 cm",140,70,,blanc,premium,220,400,45,bureau travail professionnel poste individuel blanc premium
+CHA-0021,chaise,Chaise Ergo,"Chaise Ergo standard, finition noir",,,,noir,standard,95,170,21,chaise fauteuil siège ergonomique assise lombaire noir standard
+CHA-0022,chaise,Chaise Flex,"Chaise Flex standard, finition noir",,,,noir,standard,95,160,23,chaise fauteuil siège ergonomique assise lombaire noir standard
+CHA-0023,chaise,Chaise Ergo,"Chaise Ergo standard, finition bleu",,,,bleu,standard,95,155,58,chaise fauteuil siège ergonomique assise lombaire bleu standard
+CHA-0024,chaise,Fauteuil Executive,"Fauteuil Executive standard, finition gris",,,,gris,standard,90,155,28,chaise fauteuil siège ergonomique assise lombaire gris standard
+CHA-0025,chaise,Chaise Flex,"Chaise Flex standard, finition noir",,,,noir,standard,105,180,10,chaise fauteuil siège ergonomique assise lombaire noir standard
+CHA-0026,chaise,Chaise Confort,"Chaise Confort standard, finition bleu",,,,bleu,standard,80,140,37,chaise fauteuil siège ergonomique assise lombaire bleu standard
+CHA-0027,chaise,Chaise Flex,"Chaise Flex standard, finition gris",,,,gris,standard,80,140,27,chaise fauteuil siège ergonomique assise lombaire gris standard
+CHA-0028,chaise,Chaise Ergo,"Chaise Ergo standard, finition bleu",,,,bleu,standard,105,180,33,chaise fauteuil siège ergonomique assise lombaire bleu standard
+CHA-0029,chaise,Chaise Flex,"Chaise Flex standard, finition noir",,,,noir,standard,105,180,33,chaise fauteuil siège ergonomique assise lombaire noir standard
+CHA-0030,chaise,Chaise Confort,"Chaise Confort standard, finition noir",,,,noir,standard,80,140,19,chaise fauteuil siège ergonomique assise lombaire noir standard
+CHA-0031,chaise,Fauteuil Executive,"Fauteuil Executive premium, finition bleu",,,,bleu,premium,125,225,36,chaise fauteuil siège ergonomique assise lombaire bleu premium
+CHA-0032,chaise,Chaise Confort,"Chaise Confort premium, finition noir",,,,noir,premium,135,240,44,chaise fauteuil siège ergonomique assise lombaire noir premium
+CHA-0033,chaise,Chaise Flex,"Chaise Flex premium, finition bleu",,,,bleu,premium,140,225,25,chaise fauteuil siège ergonomique assise lombaire bleu premium
+CHA-0034,chaise,Chaise Ergo,"Chaise Ergo premium, finition bleu",,,,bleu,premium,140,235,53,chaise fauteuil siège ergonomique assise lombaire bleu premium
+CHA-0035,chaise,Chaise Ergo,"Chaise Ergo premium, finition noir",,,,noir,premium,135,240,36,chaise fauteuil siège ergonomique assise lombaire noir premium
+CHA-0036,chaise,Fauteuil Executive,"Fauteuil Executive premium, finition gris",,,,gris,premium,155,255,33,chaise fauteuil siège ergonomique assise lombaire gris premium
+CHA-0037,chaise,Chaise Confort,"Chaise Confort premium, finition noir",,,,noir,premium,135,220,25,chaise fauteuil siège ergonomique assise lombaire noir premium
+CHA-0038,chaise,Chaise Confort,"Chaise Confort premium, finition noir",,,,noir,premium,115,200,24,chaise fauteuil siège ergonomique assise lombaire noir premium
+CHA-0039,chaise,Chaise Ergo,"Chaise Ergo premium, finition gris",,,,gris,premium,135,225,54,chaise fauteuil siège ergonomique assise lombaire gris premium
+CHA-0040,chaise,Chaise Flex,"Chaise Flex premium, finition bleu",,,,bleu,premium,150,250,51,chaise fauteuil siège ergonomique assise lombaire bleu premium
+TAB-0041,table_reunion,Table Conference,"Table Conference standard, finition chêne, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,chêne,standard,385,650,8,table réunion conférence collaborateurs personnes chêne standard
+TAB-0042,table_reunion,Table Executive,"Table Executive standard, finition chêne, 360 x 140 cm, jusqu'à 14 personnes",360,140,14,chêne,standard,385,705,13,table réunion conférence collaborateurs personnes chêne standard
+TAB-0043,table_reunion,Table Conference,"Table Conference standard, finition blanc, 200 x 100 cm, jusqu'à 8 personnes",200,100,8,blanc,standard,365,600,54,table réunion conférence collaborateurs personnes blanc standard
+TAB-0044,table_reunion,Table Conference,"Table Conference standard, finition noir, 360 x 140 cm, jusqu'à 14 personnes",360,140,14,noir,standard,390,690,38,table réunion conférence collaborateurs personnes noir standard
+TAB-0045,table_reunion,Table Conference,"Table Conference standard, finition blanc, 200 x 100 cm, jusqu'à 8 personnes",200,100,8,blanc,standard,430,715,9,table réunion conférence collaborateurs personnes blanc standard
+TAB-0046,table_reunion,Table Conference,"Table Conference standard, finition chêne, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,chêne,standard,400,720,19,table réunion conférence collaborateurs personnes chêne standard
+TAB-0047,table_reunion,Table Conference,"Table Conference standard, finition chêne, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,chêne,standard,400,710,37,table réunion conférence collaborateurs personnes chêne standard
+TAB-0048,table_reunion,Table Executive,"Table Executive standard, finition blanc, 200 x 100 cm, jusqu'à 8 personnes",200,100,8,blanc,standard,420,740,32,table réunion conférence collaborateurs personnes blanc standard
+TAB-0049,table_reunion,Table Executive,"Table Executive standard, finition noir, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,noir,standard,390,670,4,table réunion conférence collaborateurs personnes noir standard
+TAB-0050,table_reunion,Table Executive,"Table Executive standard, finition blanc, 200 x 100 cm, jusqu'à 8 personnes",200,100,8,blanc,standard,395,715,12,table réunion conférence collaborateurs personnes blanc standard
+TAB-0051,table_reunion,Table Executive,"Table Executive premium, finition noir, 200 x 100 cm, jusqu'à 8 personnes",200,100,8,noir,premium,540,955,36,table réunion conférence collaborateurs personnes noir premium
+TAB-0052,table_reunion,Table Executive,"Table Executive premium, finition blanc, 200 x 100 cm, jusqu'à 8 personnes",200,100,8,blanc,premium,490,875,52,table réunion conférence collaborateurs personnes blanc premium
+TAB-0053,table_reunion,Table Meeting,"Table Meeting premium, finition noir, 360 x 140 cm, jusqu'à 14 personnes",360,140,14,noir,premium,575,955,7,table réunion conférence collaborateurs personnes noir premium
+TAB-0054,table_reunion,Table Executive,"Table Executive premium, finition chêne, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,chêne,premium,570,990,37,table réunion conférence collaborateurs personnes chêne premium
+TAB-0055,table_reunion,Table Executive,"Table Executive premium, finition noir, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,noir,premium,605,995,19,table réunion conférence collaborateurs personnes noir premium
+TAB-0056,table_reunion,Table Conference,"Table Conference premium, finition chêne, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,chêne,premium,525,920,23,table réunion conférence collaborateurs personnes chêne premium
+TAB-0057,table_reunion,Table Meeting,"Table Meeting premium, finition noir, 240 x 110 cm, jusqu'à 10 personnes",240,110,10,noir,premium,515,925,22,table réunion conférence collaborateurs personnes noir premium
+TAB-0058,table_reunion,Table Meeting,"Table Meeting premium, finition blanc, 300 x 120 cm, jusqu'à 12 personnes",300,120,12,blanc,premium,520,850,32,table réunion conférence collaborateurs personnes blanc premium
+TAB-0059,table_reunion,Table Conference,"Table Conference premium, finition noir, 200 x 100 cm, jusqu'à 8 personnes",200,100,8,noir,premium,530,915,45,table réunion conférence collaborateurs personnes noir premium
+TAB-0060,table_reunion,Table Conference,"Table Conference premium, finition blanc, 360 x 140 cm, jusqu'à 14 personnes",360,140,14,blanc,premium,610,1070,29,table réunion conférence collaborateurs personnes blanc premium
+ARM-0061,armoire,Armoire Haute,"Armoire Haute standard, finition gris, 100 x 45 cm",100,45,,gris,standard,215,380,24,armoire rangement stockage dossiers portes gris standard
+ARM-0062,armoire,Armoire Premium,"Armoire Premium standard, finition gris, 120 x 50 cm",120,50,,gris,standard,210,370,42,armoire rangement stockage dossiers portes gris standard
+ARM-0063,armoire,Armoire Secure,"Armoire Secure standard, finition chêne, 80 x 45 cm",80,45,,chêne,standard,235,385,17,armoire rangement stockage dossiers portes chêne standard
+ARM-0064,armoire,Armoire Eco,"Armoire Eco standard, finition blanc, 100 x 45 cm",100,45,,blanc,standard,245,400,14,armoire rangement stockage dossiers portes blanc standard
+ARM-0065,armoire,Armoire Secure,"Armoire Secure standard, finition blanc, 100 x 45 cm",100,45,,blanc,standard,280,470,19,armoire rangement stockage dossiers portes blanc standard
+ARM-0066,armoire,Armoire Premium,"Armoire Premium standard, finition blanc, 120 x 50 cm",120,50,,blanc,standard,280,480,47,armoire rangement stockage dossiers portes blanc standard
+ARM-0067,armoire,Armoire Secure,"Armoire Secure standard, finition blanc, 100 x 45 cm",100,45,,blanc,standard,225,375,30,armoire rangement stockage dossiers portes blanc standard
+ARM-0068,armoire,Armoire Eco,"Armoire Eco standard, finition gris, 80 x 45 cm",80,45,,gris,standard,270,445,8,armoire rangement stockage dossiers portes gris standard
+ARM-0069,armoire,Armoire Haute,"Armoire Haute standard, finition blanc, 100 x 45 cm",100,45,,blanc,standard,270,470,24,armoire rangement stockage dossiers portes blanc standard
+ARM-0070,armoire,Armoire Premium,"Armoire Premium standard, finition gris, 120 x 50 cm",120,50,,gris,standard,225,385,18,armoire rangement stockage dossiers portes gris standard
+ARM-0071,armoire,Armoire Eco,"Armoire Eco premium, finition blanc, 100 x 45 cm",100,45,,blanc,premium,300,535,22,armoire rangement stockage dossiers portes blanc premium
+ARM-0072,armoire,Armoire Secure,"Armoire Secure premium, finition chêne, 80 x 45 cm",80,45,,chêne,premium,335,575,14,armoire rangement stockage dossiers portes chêne premium
+ARM-0073,armoire,Armoire Secure,"Armoire Secure premium, finition gris, 80 x 45 cm",80,45,,gris,premium,375,690,4,armoire rangement stockage dossiers portes gris premium
+ARM-0074,armoire,Armoire Haute,"Armoire Haute premium, finition chêne, 100 x 45 cm",100,45,,chêne,premium,325,565,45,armoire rangement stockage dossiers portes chêne premium
+ARM-0075,armoire,Armoire Premium,"Armoire Premium premium, finition chêne, 100 x 45 cm",100,45,,chêne,premium,375,615,35,armoire rangement stockage dossiers portes chêne premium
+ARM-0076,armoire,Armoire Secure,"Armoire Secure premium, finition chêne, 80 x 45 cm",80,45,,chêne,premium,390,690,56,armoire rangement stockage dossiers portes chêne premium
+ARM-0077,armoire,Armoire Haute,"Armoire Haute premium, finition gris, 100 x 45 cm",100,45,,gris,premium,420,690,3,armoire rangement stockage dossiers portes gris premium
+ARM-0078,armoire,Armoire Eco,"Armoire Eco premium, finition chêne, 120 x 50 cm",120,50,,chêne,premium,385,670,6,armoire rangement stockage dossiers portes chêne premium
+ARM-0079,armoire,Armoire Eco,"Armoire Eco premium, finition chêne, 100 x 45 cm",100,45,,chêne,premium,400,670,21,armoire rangement stockage dossiers portes chêne premium
+ARM-0080,armoire,Armoire Haute,"Armoire Haute premium, finition chêne, 100 x 45 cm",100,45,,chêne,premium,295,530,20,armoire rangement stockage dossiers portes chêne premium
+CLO-0081,cloison,Cloison Premium,"Cloison Premium standard, finition gris, 160 x 5 cm",160,5,,gris,standard,160,285,38,cloison acoustique séparation open space bruit panneau gris standard
+CLO-0082,cloison,Panneau Séparateur,"Panneau Séparateur standard, finition gris, 120 x 5 cm",120,5,,gris,standard,190,335,25,cloison acoustique séparation open space bruit panneau gris standard
+CLO-0083,cloison,Cloison Mobile,"Cloison Mobile standard, finition gris, 160 x 5 cm",160,5,,gris,standard,165,285,35,cloison acoustique séparation open space bruit panneau gris standard
+CLO-0084,cloison,Cloison Mobile,"Cloison Mobile standard, finition gris, 180 x 5 cm",180,5,,gris,standard,175,320,55,cloison acoustique séparation open space bruit panneau gris standard
+CLO-0085,cloison,Cloison Acoustique,"Cloison Acoustique standard, finition gris, 160 x 5 cm",160,5,,gris,standard,175,305,22,cloison acoustique séparation open space bruit panneau gris standard
+CLO-0086,cloison,Panneau Séparateur,"Panneau Séparateur standard, finition beige, 120 x 5 cm",120,5,,beige,standard,160,260,57,cloison acoustique séparation open space bruit panneau beige standard
+CLO-0087,cloison,Cloison Mobile,"Cloison Mobile standard, finition beige, 180 x 5 cm",180,5,,beige,standard,190,320,51,cloison acoustique séparation open space bruit panneau beige standard
+CLO-0088,cloison,Panneau Séparateur,"Panneau Séparateur standard, finition beige, 160 x 5 cm",160,5,,beige,standard,160,265,44,cloison acoustique séparation open space bruit panneau beige standard
+CLO-0089,cloison,Cloison Mobile,"Cloison Mobile standard, finition gris, 180 x 5 cm",180,5,,gris,standard,195,330,49,cloison acoustique séparation open space bruit panneau gris standard
+CLO-0090,cloison,Cloison Mobile,"Cloison Mobile standard, finition beige, 180 x 5 cm",180,5,,beige,standard,180,300,4,cloison acoustique séparation open space bruit panneau beige standard
+CLO-0091,cloison,Cloison Mobile,"Cloison Mobile premium, finition gris, 120 x 5 cm",120,5,,gris,premium,215,365,9,cloison acoustique séparation open space bruit panneau gris premium
+CLO-0092,cloison,Cloison Premium,"Cloison Premium premium, finition bleu, 180 x 5 cm",180,5,,bleu,premium,200,370,37,cloison acoustique séparation open space bruit panneau bleu premium
+CLO-0093,cloison,Cloison Mobile,"Cloison Mobile premium, finition bleu, 160 x 5 cm",160,5,,bleu,premium,220,365,50,cloison acoustique séparation open space bruit panneau bleu premium
+CLO-0094,cloison,Cloison Acoustique,"Cloison Acoustique premium, finition beige, 180 x 5 cm",180,5,,beige,premium,220,370,19,cloison acoustique séparation open space bruit panneau beige premium
+CLO-0095,cloison,Cloison Acoustique,"Cloison Acoustique premium, finition bleu, 120 x 5 cm",120,5,,bleu,premium,250,445,50,cloison acoustique séparation open space bruit panneau bleu premium
+CLO-0096,cloison,Cloison Premium,"Cloison Premium premium, finition bleu, 160 x 5 cm",160,5,,bleu,premium,225,370,21,cloison acoustique séparation open space bruit panneau bleu premium
+CLO-0097,cloison,Cloison Acoustique,"Cloison Acoustique premium, finition beige, 180 x 5 cm",180,5,,beige,premium,240,435,12,cloison acoustique séparation open space bruit panneau beige premium
+CLO-0098,cloison,Panneau Séparateur,"Panneau Séparateur premium, finition bleu, 180 x 5 cm",180,5,,bleu,premium,255,450,39,cloison acoustique séparation open space bruit panneau bleu premium
+CLO-0099,cloison,Cloison Mobile,"Cloison Mobile premium, finition gris, 160 x 5 cm",160,5,,gris,premium,210,370,46,cloison acoustique séparation open space bruit panneau gris premium
+CLO-0100,cloison,Cloison Acoustique,"Cloison Acoustique premium, finition beige, 120 x 5 cm",120,5,,beige,premium,250,440,36,cloison acoustique séparation open space bruit panneau beige premium
+LAM-0101,lampe,Lampadaire Office,"Lampadaire Office standard, finition noir",,,,noir,standard,50,95,60,lampe éclairage led bureau lumière noir standard
+LAM-0102,lampe,Lampe LED Pro,"Lampe LED Pro standard, finition noir",,,,noir,standard,60,110,32,lampe éclairage led bureau lumière noir standard
+LAM-0103,lampe,Lampe Desk,"Lampe Desk standard, finition gris",,,,gris,standard,65,110,16,lampe éclairage led bureau lumière gris standard
+LAM-0104,lampe,Lampe Desk,"Lampe Desk standard, finition gris",,,,gris,standard,50,85,26,lampe éclairage led bureau lumière gris standard
+LAM-0105,lampe,Lampe LED Pro,"Lampe LED Pro standard, finition gris",,,,gris,standard,65,105,17,lampe éclairage led bureau lumière gris standard
+LAM-0106,lampe,Lampadaire Premium,"Lampadaire Premium standard, finition noir",,,,noir,standard,45,85,34,lampe éclairage led bureau lumière noir standard
+LAM-0107,lampe,Lampadaire Premium,"Lampadaire Premium standard, finition noir",,,,noir,standard,60,105,27,lampe éclairage led bureau lumière noir standard
+LAM-0108,lampe,Lampadaire Office,"Lampadaire Office standard, finition blanc",,,,blanc,standard,50,85,56,lampe éclairage led bureau lumière blanc standard
+LAM-0109,lampe,Lampadaire Premium,"Lampadaire Premium standard, finition blanc",,,,blanc,standard,65,105,21,lampe éclairage led bureau lumière blanc standard
+LAM-0110,lampe,Lampadaire Office,"Lampadaire Office standard, finition noir",,,,noir,standard,60,95,40,lampe éclairage led bureau lumière noir standard
+LAM-0111,lampe,Lampe Desk,"Lampe Desk premium, finition noir",,,,noir,premium,90,145,20,lampe éclairage led bureau lumière noir premium
+LAM-0112,lampe,Lampe Desk,"Lampe Desk premium, finition blanc",,,,blanc,premium,80,145,20,lampe éclairage led bureau lumière blanc premium
+LAM-0113,lampe,Lampadaire Premium,"Lampadaire Premium premium, finition gris",,,,gris,premium,70,125,30,lampe éclairage led bureau lumière gris premium
+LAM-0114,lampe,Lampe Desk,"Lampe Desk premium, finition gris",,,,gris,premium,95,155,38,lampe éclairage led bureau lumière gris premium
+LAM-0115,lampe,Lampe LED Pro,"Lampe LED Pro premium, finition gris",,,,gris,premium,70,120,31,lampe éclairage led bureau lumière gris premium
+LAM-0116,lampe,Lampe LED Pro,"Lampe LED Pro premium, finition gris",,,,gris,premium,85,135,38,lampe éclairage led bureau lumière gris premium
+LAM-0117,lampe,Lampe LED Pro,"Lampe LED Pro premium, finition blanc",,,,blanc,premium,75,135,19,lampe éclairage led bureau lumière blanc premium
+LAM-0118,lampe,Lampadaire Office,"Lampadaire Office premium, finition noir",,,,noir,premium,75,130,28,lampe éclairage led bureau lumière noir premium
+LAM-0119,lampe,Lampe Desk,"Lampe Desk premium, finition blanc",,,,blanc,premium,70,120,54,lampe éclairage led bureau lumière blanc premium
+LAM-0120,lampe,Lampadaire Premium,"Lampadaire Premium premium, finition gris",,,,gris,premium,75,135,51,lampe éclairage led bureau lumière gris premium

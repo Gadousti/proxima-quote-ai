@@ -1,0 +1,40 @@
+PROXIMA QUOTE AI — INSTALLATION SUR MAC
+
+1. Décompresse le fichier ZIP.
+2. Ouvre le dossier proxima_quote_ai.
+3. Double-clique sur INSTALLER_MAC.command.
+4. Une fenêtre Terminal s'ouvre et installe automatiquement l'application.
+5. Quand l'installation est terminée, ferme la fenêtre.
+6. Double-clique ensuite sur LANCER_MAC.command.
+7. Streamlit ouvrira l'application dans ton navigateur.
+
+SI macOS BLOQUE LE FICHIER :
+- Fais un clic droit sur INSTALLER_MAC.command
+- Clique sur « Ouvrir »
+- Puis confirme « Ouvrir »
+
+Si macOS refuse encore :
+1. Va dans Réglages Système > Confidentialité et sécurité.
+2. Descends jusqu'au message concernant le fichier bloqué.
+3. Clique sur « Ouvrir quand même ».
+
+SI TU AS UN MESSAGE "PERMISSION DENIED" :
+Ouvre Terminal, glisse le dossier proxima_quote_ai dans Terminal après avoir tapé :
+
+cd 
+
+Puis exécute :
+
+chmod +x INSTALLER_MAC.command LANCER_MAC.command
+
+Ensuite :
+
+./INSTALLER_MAC.command
+
+Après installation :
+
+./LANCER_MAC.command
+
+PRÉREQUIS :
+Python 3 doit être installé sur le Mac.
+Le script te préviendra s'il manque.
