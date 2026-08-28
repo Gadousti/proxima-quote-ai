@@ -128,3 +128,17 @@ L'onglet **Devis** permet maintenant au commercial de :
 - valider humainement avant téléchargement du devis final.
 
 Les références et les prix restent issus du catalogue : l'édition humaine ne permet pas d'inventer une référence ou un prix.
+
+## V4 — devis client épuré
+
+Le devis téléchargé par le commercial n'affiche plus :
+- la traçabilité détaillée des corrections humaines ;
+- les anciennes valeurs et nouvelles valeurs ;
+- les mentions techniques de type `False` ;
+- le message interne de validation humaine ;
+- les questions restées sans réponse.
+
+Ces informations restent disponibles dans l'application et dans le fichier JSON de traçabilité interne.
+
+Le devis client ne conserve que les informations commerciales utiles :
+client, contact, site, adresse, lignes produits, quantités, prix, livraison, installation, informations complémentaires réellement renseignées, total et validité de l'offre.
