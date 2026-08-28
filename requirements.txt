@@ -1,5 +1,6 @@
-streamlit>=1.41
+streamlit>=1.51
 openai>=1.66
 pandas>=2.2
 pydantic>=2.8
 python-dotenv>=1.0
+reportlab>=4.0

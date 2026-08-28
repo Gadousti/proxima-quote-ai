@@ -155,3 +155,13 @@ client, contact, site, adresse, lignes produits, quantités, prix, livraison, in
   - Total TTC.
 - Le taux de TVA est paramétré dans `regles_tarifaires.csv` via `tva_pct` (20 % dans le MVP).
 - Le devis client a également été modernisé visuellement.
+
+
+## V6 — application mobile, enregistrement direct et PDF
+
+- Interface mobile-first en une seule colonne.
+- Enregistrement vocal directement dans Quotexia avec le microphone du téléphone.
+- Transcription affichée et modifiable avant analyse IA.
+- Saisie texte conservée comme solution de secours.
+- Devis final téléchargé en PDF.
+- Calcul HT, TVA et TTC conservé.

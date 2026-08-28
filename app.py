@@ -12,6 +12,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from openai import OpenAI
+from pdf_quote import build_quote_pdf
 
 load_dotenv()
 
@@ -19,7 +20,7 @@ APP_DIR = Path(__file__).parent
 CATALOG_PATH = APP_DIR / "catalogue.csv"
 RULES_PATH = APP_DIR / "regles_tarifaires.csv"
 
-st.set_page_config(page_title="Quotexia", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Quotexia", page_icon="⚡", layout="centered", initial_sidebar_state="collapsed")
 
 # ---------------------------
 # Models
@@ -697,9 +698,41 @@ st.markdown("""
 
 /* Main content width */
 .block-container {
-    max-width: 1180px;
-    padding-top: 2.1rem;
+    max-width: 470px !important;
+    padding-top: 1.1rem;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
     padding-bottom: 3rem;
+    margin: 0 auto;
+}
+
+/* Force a true mobile / single-column experience even on desktop */
+[data-testid="stHorizontalBlock"] {
+    flex-wrap: wrap !important;
+    gap: 0.65rem !important;
+}
+[data-testid="column"] {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+}
+
+/* Hide desktop sidebar by default; configuration remains available via the menu if needed */
+[data-testid="stSidebar"] {
+    min-width: 290px;
+}
+
+/* Mobile-like navigation */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.stTabs [data-baseweb="tab"] {
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 /* Brand hero */
@@ -710,8 +743,8 @@ st.markdown("""
     margin-bottom:4px;
 }
 .qx-mark {
-    width:54px;
-    height:54px;
+    width:48px;
+    height:48px;
     border-radius:18px;
     background: linear-gradient(135deg, #2563EB 0%, #7C3AED 100%);
     display:flex;
@@ -724,7 +757,7 @@ st.markdown("""
     box-shadow: 0 12px 32px rgba(37,99,235,0.22);
 }
 .qx-name {
-    font-size:46px;
+    font-size:38px;
     line-height:1;
     font-weight:850;
     letter-spacing:-1.8px;
@@ -732,7 +765,7 @@ st.markdown("""
 }
 .qx-tagline {
     color:#667085;
-    margin: 10px 0 22px 70px;
+    margin: 10px 0 20px 0;
     font-size:15px;
 }
 
@@ -820,7 +853,7 @@ hr {
     <div class="qx-mark">Q</div>
     <div class="qx-name">Quotexia</div>
 </div>
-<div class="qx-tagline">Prototype scolaire — note commerciale → besoin structuré → catalogue vérifié → brouillon de devis</div>
+<div class="qx-tagline">De la voix au devis, avec validation humaine</div>
 """, unsafe_allow_html=True)
 
 with st.sidebar:
@@ -845,9 +878,71 @@ with st.sidebar:
 tab1, tab2, tab3 = st.tabs(["1. Saisie", "2. Analyse & catalogue", "3. Devis"])
 
 with tab1:
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Note commerciale")
+    st.subheader("🎙️ Enregistrer le rendez-vous")
+    st.caption(
+        "Appuie sur le micro, enregistre la discussion ou ton compte-rendu, puis vérifie la transcription avant l'analyse."
+    )
+
+    audio = st.audio_input(
+        "Enregistrement vocal",
+        sample_rate=16000,
+        key="direct_audio",
+        help="Autorise l'accès au microphone dans ton navigateur si demandé."
+    )
+
+    if audio is not None:
+        st.audio(audio)
+
+    if st.button(
+        "📝 Retranscrire l'enregistrement",
+        type="primary",
+        use_container_width=True,
+        disabled=audio is None
+    ):
+        client = client_from_sidebar()
+        if not client:
+            st.error("L'API OpenAI n'est pas configurée.")
+        else:
+            try:
+                with st.spinner("Transcription de l'enregistrement..."):
+                    tr = transcribe_audio(client, audio, transcribe_model)
+                st.session_state["transcription"] = tr
+                st.session_state["transcription_editor"] = tr
+                st.success("Transcription terminée. Vérifie-la ci-dessous avant de lancer l'analyse.")
+            except Exception as e:
+                st.error(f"Erreur de transcription : {e}")
+
+    if "transcription" in st.session_state:
+        st.markdown("### Transcription à vérifier")
+        st.text_area(
+            "Tu peux corriger le texte si un mot a été mal compris",
+            key="transcription_editor",
+            height=230
+        )
+
+        if st.button(
+            "🤖 Analyser cette transcription",
+            type="primary",
+            use_container_width=True
+        ):
+            client = client_from_sidebar()
+            if not client:
+                st.error("L'API OpenAI n'est pas configurée.")
+            else:
+                text_to_use = st.session_state.get("transcription_editor", "").strip()
+                if not text_to_use:
+                    st.warning("La transcription est vide.")
+                else:
+                    try:
+                        with st.spinner("Extraction structurée du besoin..."):
+                            need = extract_with_ai(client, text_to_use, text_model)
+                        st.session_state["need_json"] = need.model_dump(mode="json")
+                        st.session_state["source_note"] = text_to_use
+                        st.success("Besoin extrait. Passe à l'onglet « Analyse & catalogue ».")
+                    except Exception as e:
+                        st.error(f"Erreur API : {e}")
+
+    with st.expander("⌨️ Saisir un texte à la place"):
         default_text = (
             "Je reviens de chez Dupont Consulting à Lyon. Ils aménagent une nouvelle salle de réunion. "
             "Ils veulent une table pour environ douze personnes et douze chaises ergonomiques noires. "
@@ -855,59 +950,32 @@ with tab1:
             "Livraison souhaitée avant le 20 septembre 2026. Il faudra probablement prévoir l'installation. "
             "Je n'ai pas encore l'adresse exacte du site ni le nom du contact."
         )
-        note_text = st.text_area("Texte / résumé du rendez-vous", value=default_text, height=240)
+        note_text = st.text_area(
+            "Texte / résumé du rendez-vous",
+            value=default_text,
+            height=190,
+            key="manual_note"
+        )
 
-    with col2:
-        st.subheader("Ou importer une note vocale")
-        audio = st.file_uploader("Audio", type=["mp3","wav","m4a","mp4","mpeg","mpga","ogg","webm"])
-        if audio is not None:
-            st.audio(audio)
-
-        if st.button("🎙️ Transcrire l'audio", use_container_width=True, disabled=audio is None):
+        if st.button("Analyser le texte", use_container_width=True, key="analyze_manual"):
             client = client_from_sidebar()
             if not client:
-                st.error("Ajoute une clé API OpenAI dans la barre latérale pour transcrire l'audio.")
+                st.error("L'API OpenAI n'est pas configurée.")
             else:
                 try:
-                    with st.spinner("Transcription..."):
-                        tr = transcribe_audio(client, audio, transcribe_model)
-                    st.session_state["transcription"] = tr
-                    st.success("Transcription terminée.")
+                    with st.spinner("Extraction structurée du besoin..."):
+                        need = extract_with_ai(client, note_text.strip(), text_model)
+                    st.session_state["need_json"] = need.model_dump(mode="json")
+                    st.session_state["source_note"] = note_text.strip()
+                    st.success("Besoin extrait. Passe à l'onglet « Analyse & catalogue ».")
                 except Exception as e:
-                    st.error(f"Erreur de transcription : {e}")
+                    st.error(f"Erreur API : {e}")
 
-        if "transcription" in st.session_state:
-            st.text_area("Transcription", st.session_state["transcription"], height=190, key="transcription_view")
-            if st.button("Utiliser cette transcription"):
-                st.session_state["text_for_analysis"] = st.session_state["transcription"]
-                st.success("La transcription sera utilisée pour l'analyse.")
-
-    st.divider()
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("🤖 Analyser avec l'IA", type="primary", use_container_width=True):
-            client = client_from_sidebar()
-            if not client:
-                st.error("Ajoute une clé API OpenAI, ou utilise le bouton Mode démonstration.")
-            else:
-                text_to_use = st.session_state.get("text_for_analysis", note_text).strip()
-                if not text_to_use:
-                    st.warning("Ajoute une note commerciale.")
-                else:
-                    try:
-                        with st.spinner("Extraction structurée du besoin..."):
-                            need = extract_with_ai(client, text_to_use, text_model)
-                        st.session_state["need_json"] = need.model_dump(mode="json")
-                        st.session_state["source_note"] = text_to_use
-                        st.success("Besoin extrait. Ouvre l'onglet « Analyse & catalogue ».")
-                    except Exception as e:
-                        st.error(f"Erreur API : {e}")
-    with c2:
-        if st.button("🧪 Mode démonstration sans API", use_container_width=True):
-            need = demo_need()
-            st.session_state["need_json"] = need.model_dump(mode="json")
-            st.session_state["source_note"] = default_text
-            st.success("Scénario de démonstration chargé.")
+    if st.button("🧪 Mode démonstration sans API", use_container_width=True):
+        need = demo_need()
+        st.session_state["need_json"] = need.model_dump(mode="json")
+        st.session_state["source_note"] = "Scénario de démonstration"
+        st.success("Scénario de démonstration chargé.")
 
 with tab2:
     if "need_json" not in st.session_state:
@@ -1232,18 +1300,24 @@ with tab3:
                     disabled=bool(still_missing)
                 )
 
-                html = final_quote_html(
-                    meta,
-                    edited_variant,
-                    meta.get("human_notes", ""),
-                    saved["modifications"]
+                pdf_bytes = build_quote_pdf(
+                    meta=meta,
+                    variant=edited_variant,
+                    tva_pct=float(rules.get("tva_pct", 20)),
+                    validity_days=int(rules["validite_devis_jours"]),
+                    human_notes=meta.get("human_notes", "")
                 )
 
+                safe_client = "".join(
+                    ch if ch.isalnum() or ch in ("-", "_") else "_"
+                    for ch in (meta.get("client_nom") or "client").strip()
+                ).strip("_") or "client"
+
                 st.download_button(
-                    "⬇️ Télécharger le devis final validé (HTML)",
-                    data=html,
-                    file_name=f"devis_quotexia_{gamme}.html",
-                    mime="text/html",
+                    "⬇️ Télécharger le devis final en PDF",
+                    data=pdf_bytes,
+                    file_name=f"devis_{safe_client}_{gamme}.pdf",
+                    mime="application/pdf",
                     disabled=not final_ok,
                     key=f"final_download_{gamme}",
                     use_container_width=True
