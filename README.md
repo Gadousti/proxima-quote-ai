@@ -225,3 +225,17 @@ d'une fonction définie plus bas dans le fichier.
 Correction du chargement du catalogue :
 les valeurs manquantes de `description`, `mots_cles` et `gamme`
 sont maintenant complétées avec `Series.mask()`, compatible avec pandas récent.
+
+
+## V7.2 - marque blanche Solucongia
+
+Solucongia est le fournisseur de la solution.
+Une fois le nom de l’entreprise vendeuse et son catalogue activés :
+- le nom de l’entreprise vendeuse remplace la marque produit dans le site ;
+- l’interface devient celle de l’entreprise vendeuse ;
+- le PDF affiche l’entreprise vendeuse comme émetteur ;
+- le client final détecté dans le rendez-vous est affiché comme acheteur ;
+- les fichiers PDF sont nommés `devis_<vendeur>_pour_<client>_<variante>.pdf`.
+
+Avant configuration, l’écran reste un onboarding Solucongia.
+Aucun devis final ne peut être validé sans nom d’entreprise vendeuse.

@@ -23,7 +23,7 @@ def _money(x):
     return f"{s} EUR"
 
 
-def build_quote_pdf(meta, variant, seller_company="Entreprise vendeuse", tva_pct=20.0, validity_days=30, human_notes=""):
+def build_quote_pdf(meta, variant, seller_company="", tva_pct=20.0, validity_days=30, human_notes=""):
     """Return the final client quote as PDF bytes."""
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -33,8 +33,8 @@ def build_quote_pdf(meta, variant, seller_company="Entreprise vendeuse", tva_pct
         leftMargin=18 * mm,
         topMargin=16 * mm,
         bottomMargin=16 * mm,
-        title="Devis commercial Quotexia",
-        author="Quotexia",
+        title=f"Devis commercial - {seller_company or 'Entreprise vendeuse'}",
+        author=seller_company or "Entreprise vendeuse",
     )
 
     styles = getSampleStyleSheet()
@@ -95,7 +95,7 @@ def build_quote_pdf(meta, variant, seller_company="Entreprise vendeuse", tva_pct
     story = []
 
     # Header: seller company issues the quote. The buyer remains in the client information table.
-    seller_name = (seller_company or "Entreprise vendeuse").upper()
+    seller_name = (seller_company or "ENTREPRISE VENDEUSE").upper()
     header = Table([
         [Paragraph(seller_name, styles["QXTitle"]),
          Paragraph("DEVIS COMMERCIAL", styles["QXDoc"])]
@@ -109,7 +109,7 @@ def build_quote_pdf(meta, variant, seller_company="Entreprise vendeuse", tva_pct
 
     # Client meta
     meta_rows = [
-        ["Entreprise vendeuse", seller_company or "Entreprise vendeuse"],
+        ["Vendeur", seller_company or "A confirmer"],
         ["Client", meta.get("client_nom") or "A confirmer"],
         ["Contact", meta.get("contact") or "A confirmer"],
         ["Site", meta.get("site") or "A confirmer"],

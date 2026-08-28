@@ -20,7 +20,8 @@ APP_DIR = Path(__file__).parent
 CATALOG_PATH = APP_DIR / "catalogue.csv"
 RULES_PATH = APP_DIR / "regles_tarifaires.csv"
 
-st.set_page_config(page_title="Quotexia", page_icon="⚡", layout="centered", initial_sidebar_state="collapsed")
+page_brand = st.session_state.get("catalog_company_name", "").strip() or "Solucongia"
+st.set_page_config(page_title=page_brand, page_icon="⚡", layout="centered", initial_sidebar_state="collapsed")
 
 # ---------------------------
 # Models
@@ -133,13 +134,13 @@ def normalize_catalogue_df(df):
 def get_catalog():
     if "active_catalog" not in st.session_state:
         st.session_state["active_catalog"] = normalize_catalogue_df(load_default_catalog())
-        st.session_state["catalog_company_name"] = "Entreprise Démo"
+        st.session_state["catalog_company_name"] = ""
         st.session_state["catalog_source"] = "catalogue.csv"
     return st.session_state["active_catalog"]
 
 def set_catalog(df, company_name, source_name):
     st.session_state["active_catalog"] = normalize_catalogue_df(df)
-    st.session_state["catalog_company_name"] = company_name.strip() or "Entreprise vendeuse"
+    st.session_state["catalog_company_name"] = company_name.strip()
     st.session_state["catalog_source"] = source_name
 
 def read_uploaded_catalog(uploaded):
@@ -543,7 +544,7 @@ th{{background:#F2F5FA;color:#0A0F2C}}
 .totals div{{display:flex;justify-content:space-between;padding:7px 0}}
 .ttc{{font-size:1.25rem;font-weight:bold;border-top:2px solid #0A0F2C;margin-top:4px;padding-top:10px!important}}
 </style>
-<h1>{st.session_state.get('catalog_company_name', 'Entreprise vendeuse').upper()}</h1>
+<h1>{(seller_company_name() or 'ENTREPRISE VENDEUSE').upper()}</h1>
 <div class="muted">BROUILLON DE DEVIS — VALIDATION HUMAINE REQUISE</div>
 <p>
 <b>Client :</b> {need_obj.client.nom or "À confirmer"}<br>
@@ -727,7 +728,7 @@ th:last-child{{border-radius:0 8px 8px 0}}
 </style>
 
 <div class="header">
-  <div class="client-title">{st.session_state.get("catalog_company_name", "Entreprise vendeuse").upper()}</div>
+  <div class="client-title">{(seller_company_name() or "ENTREPRISE VENDEUSE").upper()}</div>
   <div class="doc-label">DEVIS COMMERCIAL</div>
 </div>
 
@@ -782,6 +783,21 @@ def compare_values(field, old, new, modifications):
             "ancienne_valeur": old_s or "non renseigné",
             "nouvelle_valeur": new_s or "non renseigné",
         })
+
+
+def seller_company_name():
+    return st.session_state.get("catalog_company_name", "").strip()
+
+def white_label_active():
+    return bool(seller_company_name()) and st.session_state.get("catalog_source", "catalogue.csv") != "catalogue.csv"
+
+def visible_brand_name():
+    return seller_company_name() if white_label_active() else "Solucongia"
+
+def visible_brand_tagline():
+    if white_label_active():
+        return "Assistant commercial - de la conversation au devis"
+    return "Configurez la solution marque blanche de votre entreprise"
 
 # ---------------------------
 # UI
@@ -1048,12 +1064,19 @@ hr {
 }
 </style>
 
-<div class="qx-brand">
-    <div class="qx-mark">Q</div>
-    <div class="qx-name">Quotexia</div>
-</div>
-<div class="qx-tagline">Votre catalogue. Vos règles. Vos devis.</div>
+
 """, unsafe_allow_html=True)
+
+st.markdown(
+    f"""
+    <div class="qx-brand">
+        <div class="qx-mark">{visible_brand_name()[:1].upper()}</div>
+        <div class="qx-name">{visible_brand_name()}</div>
+    </div>
+    <div class="qx-tagline">{visible_brand_tagline()}</div>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
     st.header("Configuration")
@@ -1075,11 +1098,14 @@ with st.sidebar:
     st.caption("Les références, prix et stocks viennent uniquement du catalogue actif.")
 
 
-with st.expander("🏢 Catalogue de l’entreprise", expanded=False):
+with st.expander("🏢 Configuration de l’entreprise", expanded=not white_label_active()):
     active_catalog = get_catalog()
-    active_company = st.session_state.get("catalog_company_name", "Entreprise vendeuse")
+    active_company = st.session_state.get("catalog_company_name", "").strip()
 
-    st.markdown(f"**Catalogue actif : {active_company}**")
+    if white_label_active():
+        st.markdown(f"**Espace marque blanche : {active_company}**")
+    else:
+        st.markdown("**Configuration initiale de votre espace marque blanche**")
     st.caption(
         f"{len(active_catalog)} références · "
         f"{active_catalog['categorie'].nunique()} catégories · "
@@ -1088,7 +1114,7 @@ with st.expander("🏢 Catalogue de l’entreprise", expanded=False):
 
     company_name_input = st.text_input(
         "Nom de l’entreprise vendeuse",
-        value=active_company if active_company != "Entreprise Démo" else "",
+        value=active_company,
         placeholder="Ex. Martin Électricité",
         key="new_catalog_company"
     )
@@ -1131,7 +1157,10 @@ with st.expander("🏢 Catalogue de l’entreprise", expanded=False):
                         "edited_quote_standard", "edited_quote_premium"
                     ]:
                         st.session_state.pop(k, None)
-                    st.success("Catalogue client activé.")
+                    st.success(
+                        f"Espace marque blanche activé pour {company_name_input.strip()}. "
+                        "Le site et les devis utilisent maintenant cette identité."
+                    )
                     st.rerun()
         except Exception as e:
             st.error(f"Catalogue non valide : {e}")
@@ -1156,7 +1185,7 @@ with st.expander("🏢 Catalogue de l’entreprise", expanded=False):
     st.download_button(
         "⬇️ Télécharger le modèle de catalogue CSV",
         data=template_df.to_csv(index=False).encode("utf-8-sig"),
-        file_name="modele_catalogue_quotexia.csv",
+        file_name="modele_catalogue_solucongia.csv",
         mime="text/csv",
         use_container_width=True
     )
@@ -1170,14 +1199,14 @@ with st.expander("🏢 Catalogue de l’entreprise", expanded=False):
 `prix_achat_ht`, `couleur`, `longueur_cm`, `largeur_cm`,
 `capacite_personnes`, `mots_cles`.
 
-Les colonnes optionnelles peuvent être absentes : Quotexia ajoutera des valeurs par défaut.
+Les colonnes optionnelles peuvent être absentes : la solution ajoutera des valeurs par défaut.
             """
         )
 
-    if st.button("↩️ Revenir au catalogue de démonstration", use_container_width=True):
+    if st.button("↩️ Quitter l’espace marque blanche / revenir au mode démo", use_container_width=True):
         set_catalog(
             load_default_catalog(),
-            "Entreprise Démo",
+            "",
             "catalogue.csv"
         )
         for k in [
@@ -1608,21 +1637,32 @@ with tab3:
                     else:
                         st.write("Aucune modification par rapport au brouillon automatique.")
 
+                seller_missing = not seller_company_name()
+                if seller_missing:
+                    st.error(
+                        "Le nom de l’entreprise vendeuse n’est pas configuré. "
+                        "Active d’abord son catalogue dans « Configuration de l’entreprise »."
+                    )
+
                 final_ok = st.checkbox(
                     f"Je confirme avoir relu et validé humainement la variante {gamme}",
                     key=f"final_approve_{gamme}",
-                    disabled=bool(still_missing)
+                    disabled=bool(still_missing) or seller_missing
                 )
 
                 pdf_bytes = build_quote_pdf(
                     meta=meta,
                     variant=edited_variant,
-                    seller_company=st.session_state.get("catalog_company_name", "Entreprise vendeuse"),
+                    seller_company=seller_company_name(),
                     tva_pct=float(rules.get("tva_pct", 20)),
                     validity_days=int(rules["validite_devis_jours"]),
                     human_notes=meta.get("human_notes", "")
                 )
 
+                safe_seller = "".join(
+                    ch if ch.isalnum() or ch in ("-", "_") else "_"
+                    for ch in seller_company_name()
+                ).strip("_") or "vendeur"
                 safe_client = "".join(
                     ch if ch.isalnum() or ch in ("-", "_") else "_"
                     for ch in (meta.get("client_nom") or "client").strip()
@@ -1631,7 +1671,7 @@ with tab3:
                 st.download_button(
                     "⬇️ Télécharger le devis final en PDF",
                     data=pdf_bytes,
-                    file_name=f"devis_{safe_client}_{gamme}.pdf",
+                    file_name=f"devis_{safe_seller}_pour_{safe_client}_{gamme}.pdf",
                     mime="application/pdf",
                     disabled=not final_ok,
                     key=f"final_download_{gamme}",
