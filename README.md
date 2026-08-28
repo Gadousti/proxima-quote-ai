@@ -218,3 +218,10 @@ de l’entreprise vendeuse soit renseigné.
 Correction d'un `NameError` au chargement du catalogue par défaut :
 la normalisation des noms de colonnes est désormais autonome et ne dépend plus
 d'une fonction définie plus bas dans le fichier.
+
+
+## V7.1.2 — correctif pandas
+
+Correction du chargement du catalogue :
+les valeurs manquantes de `description`, `mots_cles` et `gamme`
+sont maintenant complétées avec `Series.mask()`, compatible avec pandas récent.

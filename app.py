@@ -124,9 +124,9 @@ def normalize_catalogue_df(df):
 
     # Sensible defaults
     df["stock"] = df["stock"].fillna(999999)
-    df["gamme"] = df["gamme"].replace("", "standard")
-    df["description"] = df["description"].replace("", df["nom"])
-    df["mots_cles"] = df["mots_cles"].replace("", df["description"])
+    df["gamme"] = df["gamme"].mask(df["gamme"].eq(""), "standard")
+    df["description"] = df["description"].mask(df["description"].eq(""), df["nom"])
+    df["mots_cles"] = df["mots_cles"].mask(df["mots_cles"].eq(""), df["description"])
 
     return df
 
